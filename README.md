@@ -1,2 +1,3 @@
 # P2P-file-transfer
-P2P-file-transfer using socket programming
+Repo for Computer Communication and Networking mini project III semester.
+
