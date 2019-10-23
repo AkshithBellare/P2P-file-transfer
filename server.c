@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv){
 	int i,j;
-	char s[80],f[80], msg[1024];
+	char s[1024],f[1024], msg[1024];
 	char hello[] = "Hello from server!";
 	FILE *fp;
 
@@ -58,10 +58,23 @@ int main(int argc, char** argv){
 				}
 				while(fscanf(fp, "%s", msg) != EOF){
 					send(connfd, msg, sizeof(msg), 0);
-					printf("%s\n", msg);
+					//printf("%s\n", msg);
 				}
+				printf("Sent listing details\n");
+				continue;
 			}
-			else if(strcmp(buffer, "3")==0){
+			else if(strcmp(buffer, "2")==0){
+				recv(connfd, f, sizeof(f), 0);
+				printf("Requested file %s\n", f);
+				fp = fopen(f, "rb");
+				if(fp==NULL){
+					
+					while(fp!=NULL)
+						send(connfd, fp, 1024, 0);
+					printf("(file sent)\n");
+				}continue;
+			}
+			else if(strcmp(buffer, "4")==0){
 				close(connfd);
 				printf("Connection closing...\n");
 				exit(0);
