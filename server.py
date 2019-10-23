@@ -30,17 +30,17 @@ def checkPort():
         print("Port number accepted!")
 
 
-def ServerList():
+def ServerList(c):
     print("Sending Acknowledgment of command.")
     msg = "Valid List command. Let's go ahead "
     msgEn = msg.encode('utf-8')
-    s.sendto(msgEn, clientAddr)
+    c.send(msgEn)
     print("Message Sent to Server.")
 
     print("In Server, List function")
 
     F = os.listdir(
-        path="Desktop⁩/⁨Akshith⁩/Client-Server-Fast-File-Transfer-using-UDP-on-Python⁩")
+        path="/home/laharish/git_projects/P2P-file-transfer")
     """this path will work on system where server program was made.
     Pls change this path to the directory you have stored the server.py file
     """
@@ -50,7 +50,7 @@ def ServerList():
         Lists.append(file)
     ListsStr = str(Lists)
     ListsEn = ListsStr.encode('utf-8')
-    s.sendto(ListsEn, clientAddr)
+    c.send(ListsEn)
     print("List sent from Server")
 
 
@@ -62,11 +62,11 @@ def ServerExit():
     sys.exit()
 
 
-def ServerGet(g):
+def ServerGet(g,c):
     print("Sending Acknowledgment of command.")
     msg = "Valid Get command. Let's go ahead "
     msgEn = msg.encode('utf-8')
-    s.sendto(msgEn, clientAddr)
+    c.send(msgEn)
     print("Message Sent to Client.")
 
     print("In Server, Get function")
@@ -74,10 +74,10 @@ def ServerGet(g):
     if os.path.isfile(g):
         msg = "File exists. Let's go ahead "
         msgEn = msg.encode('utf-8')
-        s.sendto(msgEn, clientAddr)
+        c.send(msgEn)
         print("Message about file existence sent.")
 
-        c = 0
+        count = 0
         sizeS = os.stat(g)
         sizeSS = sizeS.st_size  # number of packets
         print("File size in bytes:" + str(sizeSS))
@@ -85,16 +85,16 @@ def ServerGet(g):
         NumS = NumS + 1
         tillSS = str(NumS)
         tillSSS = tillSS.encode('utf8')
-        s.sendto(tillSSS, clientAddr)
+        c.send(tillSSS)
 
         check = int(NumS)
         GetRunS = open(g, "rb")
         while check != 0:
             RunS = GetRunS.read(4096)
-            s.sendto(RunS, clientAddr)
-            c += 1
+            c.send(RunS)
+            count += 1
             check -= 1
-            print("Packet number:" + str(c))
+            print("Packet number:" + str(count))
             print("Data sending in process:")
         GetRunS.close()
         print("Sent from Server - Get function")
@@ -102,15 +102,15 @@ def ServerGet(g):
     else:
         msg = "Error: File does not exist in Server directory."
         msgEn = msg.encode('utf-8')
-        s.sendto(msgEn, clientAddr)
+        c.send(msgEn)
         print("Message Sent.")
 
 
-def ServerPut():
+def ServerPut(c):
     print("Sending Acknowledgment of command.")
     msg = "Valid Put command. Let's go ahead "
     msgEn = msg.encode('utf-8')
-    s.sendto(msgEn, clientAddr)
+    c.send(msgEn)
     print("Message Sent to Client.")
 
     print("In Server, Put function")
@@ -121,7 +121,7 @@ def ServerPut():
         print("Receiving packets will start now if file exists.")
         #print("Timeout is 15 seconds so please wait for timeout at the end.")
         try:
-            Count, countaddress = s.recvfrom(4096)  # number of packet
+            Count, countaddress = c.recvfrom(4096)  # number of packet
         except ConnectionResetError:
             print(
                 "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
@@ -137,7 +137,7 @@ def ServerPut():
         #tillI = tillI - 2
         # s.settimeout(2)
         while tillI != 0:
-            ServerData, serverAddr = s.recvfrom(4096)
+            ServerData, serverAddr = c.recvfrom(4096)
             # s.settimeout(2)
 
             #BigS = open("tmp.txt", "wb")
@@ -166,11 +166,11 @@ def ServerPut():
         # BigSAgain.close()
 
 
-def ServerElse():
+def ServerElse(c):
     msg = "Error: You asked for: " + \
         t2[0] + " which is not understood by the server."
     msgEn = msg.encode('utf-8')
-    s.sendto(msgEn, clientAddr)
+    c.send(msgEn)
     print("Message Sent.")
 
 
@@ -188,7 +188,7 @@ checkPort()
 
 #port = 6000
 try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("Server socket initialized")
     s.bind((host, port))
     print("Successful binding. Waiting for Client now.")
@@ -201,12 +201,16 @@ except socket.error:
 # time.sleep(1)
 while True:
     try:
-        data, clientAddr = s.recvfrom(4096)
+        s.listen()
+        c, addr = s.accept()
+        print("client accepted! ", addr)
+        data = c.recv(4096)
+        #data, clientAddr = s.recvfrom(4096)
     except ConnectionResetError:
         print(
             "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
         sys.exit()
-    text = data.decode('utf8')
+    text = data.decode('utf-8')
     t2 = text.split()
     #print("data print: " + t2[0] + t2[1] + t2[2])
     if t2[0] == "get":
@@ -214,15 +218,15 @@ while True:
         ServerGet(t2[1])
     elif t2[0] == "put":
         print("Go to put func")
-        ServerPut()
+        ServerPut(c)
     elif t2[0] == "list":
         print("Go to List func")
-        ServerList()
+        ServerList(c)
     elif t2[0] == "exit":
         print("Go to Exit function")
         ServerExit()
     else:
-        ServerElse()
+        ServerElse(c)
 
 print("Program will end now. ")
 quit()

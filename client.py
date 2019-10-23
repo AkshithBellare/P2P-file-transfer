@@ -18,7 +18,7 @@ def checkArg():
             "ERROR. Wrong number of arguments passed. System will exit. Next time please supply 2 arguments!")
         sys.exit()
     else:
-        print("2 Arguments exist. We can proceed further")
+        print(":)")
 
 
 def checkPort():
@@ -30,6 +30,7 @@ def checkPort():
         print("Port number accepted!")
 
 checkArg()
+
 try:
     socket.gethostbyname(sys.argv[1])
 except socket.error:
@@ -37,6 +38,7 @@ except socket.error:
     sys.exit()
 
 host = sys.argv[1]
+
 try:
     port = int(sys.argv[2])
 except ValueError:
@@ -51,7 +53,7 @@ checkPort()
 #host = "127.0.0.1"
 #port = 6000
 try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("Client socket initialized")
     s.setblocking(0)
     s.settimeout(15)
@@ -63,16 +65,16 @@ except socket.error:
 """
 Functions like below can be created and called. However, for simplicity, we just put everything in main.
 def ClientGet(a):
-    ClientData, clientAddr = s.recvfrom(51200)
+    ClientData, clientAddr = s.recv(51200)
     text = ClientData.decode('utf8')
     print(text)
 
-    ClientData, clientAddr = s.recvfrom(8192)
+    ClientData, clientAddr = s.recv(8192)
     text = ClientData.decode('utf8')
     print("hey" + text)
 
     if len(text) < 30:
-        Data, Recv = s.recvfrom(8192)
+        Data, Recv = s.recv(8192)
         NewFileOpen = open(a, "wb")
         NewFileOpen.write(Data)
         NewFileOpen.close()
@@ -90,8 +92,11 @@ while True:
     o list
     o exit"""
     CommClient = command.encode('utf-8')
+    s.connect((host,port))
+
     try:
-        s.sendto(CommClient, (host, port))
+        #s.sendto(CommClient, (host, port))
+        s.send(CommClient)
     except ConnectionResetError:
         print(
             "Error. Port numbers are not matching. Exiting. Next time please enter same port numbers.")
@@ -105,7 +110,8 @@ while True:
     if CL[0] == "get":
         print("Checking for acknowledgement")
         try:
-            ClientData, clientAddr = s.recvfrom(51200)
+        	print("trying to receive")
+            ClientData = s.recv(4096)
         except ConnectionResetError:
             print(
                 "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
@@ -118,7 +124,7 @@ while True:
         print("Inside Client Get")
 
         try:
-            ClientData2, clientAddr2 = s.recvfrom(51200)
+            ClientData2 = s.recv(4096)
         except ConnectionResetError:
             print(
                 "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
@@ -136,7 +142,7 @@ while True:
                 d = 0
                 try:
                     # number of paclets
-                    CountC, countaddress = s.recvfrom(4096)
+                    CountC = s.recv(4096)
                 except ConnectionResetError:
                     print(
                         "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
@@ -151,7 +157,7 @@ while True:
                 # print(
                 #   "Timeout is 15 seconds so please wait for timeout at the end.")
                 while tillCC != 0:
-                    ClientBData, clientbAddr = s.recvfrom(4096)
+                    ClientBData, clientbAddr = s.recv(4096)
                     dataS = BigC.write(ClientBData)
                     d += 1
                     print("Received packet number:" + str(d))
@@ -164,7 +170,7 @@ while True:
     elif CL[0] == "put":
         print("Checking for acknowledgement")
         try:
-            ClientData, clientAddr = s.recvfrom(4096)
+            ClientData, clientAddr = s.recv(4096)
         except ConnectionResetError:
             print(
                 "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
@@ -221,7 +227,7 @@ while True:
     elif CL[0] == "list":
         print("Checking for acknowledgement")
         try:
-            ClientData, clientAddr = s.recvfrom(51200)
+            ClientData = s.recv(4096)
         except ConnectionResetError:
             print(
                 "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
@@ -234,7 +240,7 @@ while True:
         print(text)
 
         if text == "Valid List command. Let's go ahead ":
-            ClientDataL, clientAddrL = s.recvfrom(4096)
+            ClientDataL = s.recv(4096)
             text2 = ClientDataL.decode('utf8')
             print(text2)
         else:
@@ -246,7 +252,7 @@ while True:
 
     else:
         try:
-            ClientData, clientAddr = s.recvfrom(51200)
+            ClientData = s.recv(4096)
         except ConnectionResetError:
             print(
                 "Error. Port numbers not matching. Exiting. Next time enter same port numbers.")
