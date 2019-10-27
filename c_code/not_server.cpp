@@ -1,6 +1,6 @@
 //Example code: A simple server side code, which echos back the received message. 
 //Handle multiple socket connections with select and fd_set on Linux  
-#include <stdio.h>  
+#include <iostream>  
 #include <string.h>   //strlen  
 #include <stdlib.h>  
 #include <errno.h>  
@@ -14,7 +14,9 @@
 #define TRUE   1  
 #define FALSE  0  
 #define PORT 8888  
-     
+    
+using namespace std;
+
 int main(int argc , char *argv[])   
 {   
     int opt = TRUE;   
@@ -107,7 +109,7 @@ int main(int argc , char *argv[])
        
         if ((activity < 0) && (errno!=EINTR))   
         {   
-            printf("select error");   
+            cout<<"select error\n" ; 
         }   
              
         //If something happened on the master socket ,  
@@ -122,8 +124,9 @@ int main(int argc , char *argv[])
             }   
              
             //inform user of socket number - used in send and receive commands  
-            printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs 
-                  (address.sin_port));   
+            cout<<"New connection , socket fd is "<<new_socket <<", ip is : "
+            <<inet_ntoa(address.sin_addr)<<" , port : "<<ntohs(address.sin_port)
+            <<endl;   
            
             //send new connection greeting message  
             if( send(new_socket, message, strlen(message), 0) != strlen(message) )   
@@ -140,7 +143,7 @@ int main(int argc , char *argv[])
                 if( client_socket[i] == 0 )   
                 {   
                     client_socket[i] = new_socket;   
-                    printf("Adding to list of sockets as %d\n" , i);   
+                    cout<<"Adding to list of sockets as "<<i<<endl ;   
                          
                     break;   
                 }   
@@ -150,8 +153,10 @@ int main(int argc , char *argv[])
         //else its some IO operation on some other socket 
         for (i = 0; i < max_clients; i++)   
         {   
+            cout<<max_clients<<"Num";
             sd = client_socket[i];   
-                 
+            bzero(buffer,1024);
+            cout<<buffer<<"q";
             if (FD_ISSET( sd , &readfds))   
             {   
                 //Check if it was for closing , and also read the  
@@ -173,27 +178,15 @@ int main(int argc , char *argv[])
                 {   
                     //set the string terminating NULL byte on the end  
                     //of the data read  
-                    buffer[valread] = '\0';   
-                    send(sd , buffer , strlen(buffer) , 0 ); 
+                    buffer[valread] = '\n';  
+                    cout<<buffer; 
+                    send(sd , buffer , strlen(buffer) , 0 );
+                                 bzero(buffer,1024);
+                    cout<<buffer<<"Testing";
                     printf("echoed message\n");
                     
-                    // FILE *fp;
-                    // fp = fopen("hello.txt", "rb");
-                    // if(fp!=NULL)printf("opened file\n");
-                    // char c;
-                    // int idx=0;
-                    // while (fscanf(fp , "%c" ,&c) == 1)
-                    // {
-                    //     printf("inserting into msg : %c\n", c);
-                    //     msg[idx] = c;
-                    //     idx++;
-                    // }
-                    
-                    // printf("%s\n", msg);
-                    // printf("sending hello.txt file\n");
-                    // send(sd, msg, strlen(msg), 0);   
-
                 }   
+
             }   
         }   
     }   
