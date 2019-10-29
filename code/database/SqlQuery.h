@@ -1,11 +1,15 @@
 #include <sqlite3.h> 
 #include <string>
 #include <iostream>
+#include <bits/stdc++.h>
+using Record = std::vector<std::string>;
+using Records = std::vector<Record>;
 using namespace std;
  class SqlQuery{
    public:
       const char* databaseName;
       sqlite3 *DB;
+
            
       void printError(string);
       void openDatabase();
@@ -13,19 +17,35 @@ using namespace std;
       void displayContents(string);
       void insertIntoTable(string);
       void deleteFromTable(string,string);
+      Records getContents(string);
 };
-
+static string returningString;
 static int callback(void* data, int argc, char** argv, char** azColName) 
 { 
     int i; 
     fprintf(stderr, "%s: ", (const char*)data); 
-  
+      returningString="";
+
     for (i = 0; i < argc; i++) { 
         printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL"); 
+        returningString=returningString+argv[i]+"\n";
+
     } 
-  
     printf("\n"); 
     return 0; 
+}
+
+int select_callback(void *p_data, int num_fields, char **p_fields, char **p_col_names)
+{
+  Records* records = static_cast<Records*>(p_data);
+  try {
+    records->emplace_back(p_fields, p_fields + num_fields);
+  }
+  catch (...) {
+    // abort select on failure, don't let exception propogate thru sqlite3 call-stack
+    return 1;
+  }
+  return 0;
 }
 void SqlQuery::openDatabase(){
    int exit=sqlite3_open(databaseName,&DB);
@@ -51,11 +71,25 @@ void SqlQuery::createTable(string sqlCommand){
     else
         std::cout << "Table created Successfully" << std::endl;
 }
-void SqlQuery::displayContents(string tableName){
-   string sqlQuery="SELECT * FROM "+tableName;
+void SqlQuery::displayContents(string sqlQuery){
    sqlite3_exec(DB, sqlQuery.c_str(), callback, NULL, NULL); 
-
+   cout<<"Displayed";
 } 
+Records SqlQuery::getContents(string sqlQuery)
+{
+  Records records;  
+  char *errmsg;
+  int ret = sqlite3_exec(DB, sqlQuery.c_str(), select_callback, &records, &errmsg);
+  if (ret != SQLITE_OK) {
+    std::cerr << "Error in select statement " << sqlQuery << "[" << errmsg << "]\n";
+  }
+  else {
+    std::cerr << records.size() << " records returned.\n";
+  }
+
+  return records;
+}
+
 void SqlQuery::deleteFromTable(string tableName,string condition){
    char *messageError;
    string sqlCommand("DELETE FROM "+tableName+" WHERE "+condition+";");
