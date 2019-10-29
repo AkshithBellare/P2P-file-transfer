@@ -8,6 +8,7 @@
 #include <sys/socket.h>  
 #include <netinet/in.h>  
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
+#include <pthread.h>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ using namespace std;
 #define FALSE  0 
 #define PORT 8888 
 #define PUB_PORT 5000
-#define SUB_PORT 6001
+#define SUB_PORT 6000
 
 class ServerConnection{
 
@@ -26,7 +27,10 @@ class ServerConnection{
         void openSubConnection();
 		void sendCategory();
 		void sendKey();
+        void* pubHelper(void* arg);
 };
+
+//void* 
 
 void ServerConnection::openPubConnection(){
     int opt = TRUE;
@@ -58,7 +62,7 @@ void ServerConnection::openPubConnection(){
     //setting up the socket
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PUB_PORT);
+    address.sin_port = htons(5000);
 
     //binding socket
     if( bind(listening, (struct sockaddr *)&address, sizeof(address)) < 0){
@@ -154,7 +158,8 @@ void ServerConnection::openPubConnection(){
                 else{
                     //Publisher operations begin
 
-
+                    buffer[rcvd_bytes] = '\0';
+                    printf("%s\n", buffer);
 
                 }
             }
@@ -258,8 +263,9 @@ void ServerConnection::openSubConnection(){
             cout<<"New connection, socket fd is "<< new_sock <<", IP address : "<< inet_ntoa(address.sin_addr) <<", Port : "<< ntohs(address.sin_port)<<endl;
             
             //send welcome message
-            if( send(new_sock, hello, sizeof(hello), 0) != strlen(hello) ){
+            if( send(new_sock, hello, sizeof(hello), 0) < 0 ){
                 perror("send");
+                exit(EXIT_FAILURE);
             }
 
             puts("Welcome message sent successfully");
@@ -296,6 +302,8 @@ void ServerConnection::openSubConnection(){
                     //Subscriber operations begin
 
 
+                    buffer[rcvd_bytes] = '\0';
+                    printf("%s\n", buffer);
 
                 }
             }
@@ -316,14 +324,37 @@ int main(int argc, char **argv){
 
     ServerConnection *server = new ServerConnection();
 
-    // pid_t pid = fork();
-    // if(pid == 0){
-    //     cout<<"running on child the publisher connection\n";
-    //     server->openPubConnection();
-    // }else if(pid > 0){
-    //     cout<<"running the parent process subscriber connection\n";
-    //     server->openSubConnection();
+    // pthread_t subThread, pubThread;
+    // int subThdRet, pubThdRet;
+
+    // subThdRet = pthread_create(&subThread, NULL, &openSubConnection, NULL);
+    // if(subThdRet){
+    //     cerr<<"error creating sub thread. exit id\n"<<subThdRet;
+    //     exit(EXIT_FAILURE);
     // }
-    server->openSubConnection();
+    // pubThdRet = pthread_create(&pubThread, NULL, &openPubConnection, NULL);
+    // if(subThdRet){
+    //     cerr<<"error creating pub thread. exit id\n"<<pubThdRet;
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // pthread_join( subThread, NULL);
+    // pthread_join( pubThread, NULL);
+    // exit(EXIT_SUCCESS);
+
+    pid_t pid = fork();
+
+    if( pid == 0){
+        cout<<"running from child, subscriber connections\n";
+        server->openSubConnection();
+    }else if( pid > 0 ){
+        cout<<"running from parent, publisher connection\n";
+        server->openPubConnection();
+    }else{
+        cout<<"fork failed\n";
+    }
+
+    //server->openPubConnection();
     
+
 }
