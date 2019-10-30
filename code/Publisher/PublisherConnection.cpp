@@ -10,9 +10,9 @@
 #include <netinet/in.h>
 #include <sys/time.h> 
 
-#define SERV_PORT 8888
+#define SERV_PORT 5000
 #define PORT_PUB_SUB 4000
-#define SERV_IP "10.50.19.120"
+#define SERV_IP "10.53.92.211"
 
 using namespace std;
 
@@ -74,6 +74,10 @@ void PublisherConnection::listenForSubscriber(){
 	 else{
 		 cout<<"Connected to Subscriber";
 	 }
+	 int n = read(ALSNewSockFd,buffer,255);
+	 if (n < 0) 
+        error("ERROR reading from socket");
+	 cout<<buffer;
 
 }
 void PublisherConnection::serverShowsList(){
@@ -106,7 +110,7 @@ void PublisherConnection::askForFile(){
     	error("Error writing to socket");
 	else
 		bzero(buffer,256);
-		int n = read(ALCSockFd,buffer,255);
+		n = read(ALCSockFd,buffer,255);
 		if (n < 0) 
 			error("ERROR reading from socket");
 		else
@@ -140,12 +144,13 @@ void PublisherConnection::sendFileToSub(char *fileName){
 
 int main(int argc,char *argv[]){
 	PublisherConnection *obj=new PublisherConnection();
-	obj->connectToServer();
-	obj->serverShowsList();
+	//obj->connectToServer();
+	obj->listenForSubscriber();
+	/*obj->serverShowsList();
 	obj->sendCategoryAndFile();
 	//server asks for file and category
 	obj->listenForSubscriber();
-	obj->askForFile();
+	obj->askForFile();*/
 
 
 
