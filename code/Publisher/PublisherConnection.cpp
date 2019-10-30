@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <sys/time.h> 
 
-#define SERV_PORT 8888
+#define SERV_PORT 5000
 #define PORT_PUB_SUB 4000
 #define SERV_IP "10.50.19.120"
 
@@ -53,6 +53,13 @@ void PublisherConnection::connectToServer(){
         error("ERROR connecting");
     }
     cout<<"Connected to server";
+		bzero(buffer,256);
+		int n = recv(ALCSockFd,buffer,255,0);
+		cout<<buffer;
+		while(1){
+    	int n = recv(ALCSockFd,buffer,255,0);
+		cout<<buffer;
+			}
 }
 void PublisherConnection::listenForSubscriber(){
 	 ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -106,7 +113,7 @@ void PublisherConnection::askForFile(){
     	error("Error writing to socket");
 	else
 		bzero(buffer,256);
-		int n = read(ALCSockFd,buffer,255);
+		 n = read(ALCSockFd,buffer,255);
 		if (n < 0) 
 			error("ERROR reading from socket");
 		else
@@ -141,12 +148,13 @@ void PublisherConnection::sendFileToSub(char *fileName){
 int main(int argc,char *argv[]){
 	PublisherConnection *obj=new PublisherConnection();
 	obj->connectToServer();
+	/*while(1)
 	obj->serverShowsList();
-	obj->sendCategoryAndFile();
-	//server asks for file and category
-	obj->listenForSubscriber();
-	obj->askForFile();
+	//obj->sendCategoryAndFile();
+	///server asks for file and category
+	////obj->listenForSubscriber();
+	//obj->askForFile();
 
-
+*/
 
 }
