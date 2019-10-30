@@ -9,17 +9,18 @@
 #include <netinet/in.h>  
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
 #include <pthread.h>
+#include "Database.h"
 
 using namespace std;
 
 #define TRUE   1 
 #define FALSE  0 
-#define PORT 8888 
 #define PUB_PORT 5000
 #define SUB_PORT 6000
 
-class ServerConnection{
+Database *database = new Database();
 
+class ServerConnection{
     //int pub_master_sock, sub_master_sock;
 
 	public:
@@ -39,7 +40,7 @@ void ServerConnection::openPubConnection(){
     int addrlen, max_sd, sd, new_sock, activity, rcvd_bytes; 
     int client_socket[10];  //list of sockets  
     fd_set readfds;
-    char hello[] = "Welcome to the server publisher!";
+    char hello[] = "Welcome to the server publisher!\n";
     char buffer[1024];
 
     //initializing all sockets
@@ -157,10 +158,11 @@ void ServerConnection::openPubConnection(){
                 }  
                 else{
                     //Publisher operations begin
-
-                    buffer[rcvd_bytes] = '\0';
-                    printf("%s\n", buffer);
-
+                    char* buffer = "Enter your unique key\n";
+                    char* key = " ";
+                    send(sd,buffer,sizeof(buffer),0);
+                    recv(sd,key,sizeof(key),0);
+                    database->addPublisher(inet_ntoa(address.sin_addr),key);
                 }
             }
         }
@@ -175,7 +177,7 @@ void ServerConnection::openSubConnection(){
     int addrlen, max_sd, sd, new_sock, activity, rcvd_bytes; 
     int client_socket[10];  //list of sockets  
     fd_set readfds;
-    char hello[] = "Welcome to the server! subscriber";
+    char hello[] = "Welcome to the server! subscriber\n";
     char buffer[1024];
 
     //initialise all client_socket[] to 0 so not checked  
@@ -299,7 +301,7 @@ void ServerConnection::openSubConnection(){
                     client_socket[i] = 0;
                 }  
                 else{
-                    //Subscriber operations begin
+                    
 
 
                     buffer[rcvd_bytes] = '\0';
@@ -323,28 +325,10 @@ void ServerConnection::sendKey(){
 int main(int argc, char **argv){
 
     ServerConnection *server = new ServerConnection();
-
-    // pthread_t subThread, pubThread;
-    // int subThdRet, pubThdRet;
-
-    // subThdRet = pthread_create(&subThread, NULL, &openSubConnection, NULL);
-    // if(subThdRet){
-    //     cerr<<"error creating sub thread. exit id\n"<<subThdRet;
-    //     exit(EXIT_FAILURE);
-    // }
-    // pubThdRet = pthread_create(&pubThread, NULL, &openPubConnection, NULL);
-    // if(subThdRet){
-    //     cerr<<"error creating pub thread. exit id\n"<<pubThdRet;
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // pthread_join( subThread, NULL);
-    // pthread_join( pubThread, NULL);
-    // exit(EXIT_SUCCESS);
-
+    database->displayContents("Database");
     pid_t pid = fork();
 
-    if( pid == 0){
+    if( pid == 0 ){
         cout<<"running from child, subscriber connections\n";
         server->openSubConnection();
     }else if( pid > 0 ){

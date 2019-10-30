@@ -16,13 +16,15 @@ using namespace std;
 #define SERV_PORT 6000
 #define SUB_PUB_PORT 4000
 
+char* Publisher_IP = " ";
+long key = 0;
+
 class SubscriberConnection{
 public:
     char buffer[4098]; //this buffer is used to receive messages
     struct sockaddr_in server_address;
     int SubscriberSockfd; 
     int SubToPubSockfd; //socket for publisher to subscriber connection
-    char* Publisher_IP;
     struct sockaddr_in publisher_as_server;
     
     //server side functions
@@ -30,6 +32,7 @@ public:
     void serverShowsListOfTopics();
     void subscribe();
     void ReceiveMessageFromServer();
+    long ReceiveKeyFromServer();
     void SendMessageToServer(char* message);
    
     void setPublisherIP(char* PublisherIP);
@@ -63,6 +66,12 @@ void SubscriberConnection::ReceiveMessageFromPublisher(){ //To receive messages 
     cout << buffer;
 }
 
+long SubscriberConnection::ReceiveKeyFromServer(){
+    char* buffer;
+    int n = recv(SubscriberSockfd,buffer,sizeof(buffer),0);
+    return (long)buffer;
+}
+
 void SubscriberConnection::SendMessageToPublisher(char* message){ //To send messages to the Pubisher
     send(SubToPubSockfd,message,sizeof(message),0);
 }
@@ -87,14 +96,6 @@ void SubscriberConnection::ReceiveFileFromPublisher(char* fileName){ //To receiv
  printf("The file was received successfully\n\n");
  }
 
-
-void SubscriberConnection::setPublisherIP(char* PublisherIP){
-    Publisher_IP = PublisherIP;
-}
-
-char* SubscriberConnection::getPublisherIP(){
-    return Publisher_IP;
-}
 void SubscriberConnection::connectToServer(char* argv){
     
     SubscriberSockfd = socket(AF_INET,SOCK_STREAM,0);
@@ -129,15 +130,13 @@ void SubscriberConnection::subscribe(){ //subscriber is done
     cout << "Enter the topics you want to subscriber to\n";
     int max = 0;
     char* topic;
-    char* PublisherIP;
     cin >> topic;
     SendMessageToServer(topic);
     //Modify the below part based on how the data is stored in the database
     ReceiveMessageFromServer(); //receive table of IPs and file names
     cout << "Enter the Publisher IP address:";
-    cin >> PublisherIP;
-    setPublisherIP(PublisherIP);
-    SendMessageToServer(PublisherIP);
+    cin >> Publisher_IP;
+    SendMessageToServer(Publisher_IP);
     ReceiveMessageFromServer(); //Receive key of the publisher from the server
 }
 
@@ -164,7 +163,20 @@ void SubscriberConnection::connectToPublisher(char* Pub_IP){ //connection to pub
 
 int main(int argc, char** argv){
     SubscriberConnection *subscriber = new SubscriberConnection();
-    //subscriber->connectToServer(argv[1]);//done
+   
+    pid_t pid = fork();
+
+    if( pid == 0 ){
+        subscriber->connectToServer(argv[1]);
+    }else if( pid > 0 ){
+        if((key = subscriber->ReceiveKeyFromServer()) > 0 )
+        subscriber->connectToPublisher(Publisher_IP);
+    }else{
+        cout<<"fork failed\n";
+    }
+   
+   
+    subscriber->connectToServer(argv[1]);//done
     //subscriber->subscribe();//done
     //char* PublisherIP;
     //char* filename;
