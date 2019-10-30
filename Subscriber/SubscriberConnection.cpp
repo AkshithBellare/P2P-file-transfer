@@ -39,7 +39,9 @@ public:
 };
 
 void SubscriberConnection::ReceiveMessageFromServer(){
-    
+    char buffer[4098] = {0};
+    recv(SubscriberSockfd,buffer,sizeof(buffer),0);
+    cout << buffer;
 }
 
 /***void SubscriberConnection::ReceiveFileFromPublisher(){
@@ -88,8 +90,8 @@ void SubscriberConnection::connectToServer(char* argv){
     }
     cout<<"Connected to server";
     while(1){
-    recv(SubscriberSockfd, buffer,sizeof(buffer),0);
-    cout << buffer << "\n";
+    recv(SubscriberSockfd,buffer,sizeof(buffer),0);
+    cout << buffer;
     }
     send(SubscriberSockfd,ack,sizeof(ack),0);
     /**int received_bytes = recv(SubscriberSockfd, buffer, sizeof(buffer), 0);
