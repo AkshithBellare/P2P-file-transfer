@@ -15,42 +15,63 @@ using namespace std;
 
 #define SERV_PORT 6000
 #define SUB_PUB_PORT 4000
-#define SERV_IP "10.50.19.120"
-#define PUBLISHER_IP "10.53.92.211"
-
 class SubscriberConnection{
 public:
-    char buffer[4098];
+    char buffer[4098]; //this buffer is used to receive messages
     struct sockaddr_in server_address;
-    int SubscriberSockfd;
-    int SubToPubSockfd;
+    int SubscriberSockfd; 
+    int SubToPubSockfd; //socket for publisher to subscriber connection
+    char* Publisher_IP;
     struct sockaddr_in publisher_as_server;
+    
+    //server side functions
     void connectToServer(char* argv);
-    void connectToPublisher(char* Pub_IP);
     void serverShowsListOfTopics();
-    void subscribe_to_a_topic();
+    void subscribe();
     void ReceiveMessageFromServer();
-    void ReceiveFileFromPublisher();
-    void sendFileNameToServer(char* filename);
+    void SendMessageToServer(char* message);
+   
+    void setPublisherIP(char* PublisherIP);
+    char* getPublisherIP();
+    
+    //publisher side functions
+    void connectToPublisher(char* Pub_IP);
+    void ReceiveFileFromPublisher(char* filename);
+    void ReceiveMessageFromPublisher();
+    void SendMessageToPublisher(char* message);
     void error(const char *msg){
         perror(msg);
         exit(0);
     }
 };
 
-void SubscriberConnection::ReceiveMessageFromServer(){
+void SubscriberConnection::ReceiveMessageFromServer(){ //To receive messages from the server
     char buffer[4098] = {0};
     recv(SubscriberSockfd,buffer,sizeof(buffer),0);
     cout << buffer;
 }
 
-/***void SubscriberConnection::ReceiveFileFromPublisher(){
+void SubscriberConnection::SendMessageToServer(char* message){ //To send messages to the server
+    send(SubscriberSockfd,message,sizeof(message),0);
+}
+
+
+void SubscriberConnection::ReceiveMessageFromPublisher(){ //To receive messages from the Publisher
+    char buffer[4098] = {0};
+    recv(SubToPubSockfd,buffer,sizeof(buffer),0);
+    cout << buffer;
+}
+
+void SubscriberConnection::SendMessageToPublisher(char* message){ //To send messages to the Pubisher
+    send(SubToPubSockfd,message,sizeof(message),0);
+}
+
+void SubscriberConnection::ReceiveFileFromPublisher(char* fileName){ //To receive file from the publisher
  int ch = 0;
- //char fileName[100] = {0};
  char buffer[256]= {0};
  FILE* fp;
  recv(SubToPubSockfd, fileName, strlen(fileName),0);
- fp = fopen("", "a");
+ fp = fopen(fileName, "a");
  int words;
  
  read(SubToPubSockfd, &words, sizeof(int));
@@ -63,15 +84,17 @@ void SubscriberConnection::ReceiveMessageFromServer(){
  
  printf("The file was received successfully\n\n");
  }
- **/
 
-void SubscriberConnection::sendFileNameToServer(char* filename){
-    send(SubToPubSockfd, filename, sizeof(filename),0);
+
+void SubscriberConnection::setPublisherIP(char* PublisherIP){
+    Publisher_IP = PublisherIP;
 }
 
+char* SubscriberConnection::getPublisherIP(){
+    return Publisher_IP;
+}
 void SubscriberConnection::connectToServer(char* argv){
-    //char buffer[100]= {0};
-    char* ack = "hello";
+    
     SubscriberSockfd = socket(AF_INET,SOCK_STREAM,0);
     if(SubscriberSockfd < 0) {
         error("ERROR opening socket");
@@ -89,11 +112,7 @@ void SubscriberConnection::connectToServer(char* argv){
         exit(-1);
     }
     cout<<"Connected to server";
-    while(1){
-    recv(SubscriberSockfd,buffer,sizeof(buffer),0);
-    cout << buffer;
-    }
-    send(SubscriberSockfd,ack,sizeof(ack),0);
+    ReceiveMessageFromServer();
     /**int received_bytes = recv(SubscriberSockfd, buffer, sizeof(buffer), 0);
      if(received_bytes < 0){
      cout << "error receiving files\n\n";
@@ -111,18 +130,33 @@ void SubscriberConnection::serverShowsListOfTopics(){
     cout << buffer;
 }
 
-void SubscriberConnection::subscribe_to_a_topic(){
-    cout << "Enter the topics you want to subscribe to:";
-    cin >> buffer;
-    send(SubscriberSockfd, buffer, strlen(buffer),0);
+void SubscriberConnection::subscribe(){ //subscriber is done
+    SendMessageToServer("Subscribe");
+    ReceiveMessageFromServer(); //Receive list of topics from the subscriber
+    cout << "Enter the topics you want to subscriber to\n";
+    int max = 0;
+    char* topic;
+    char* PublisherIP;
+    while(max!=5){
+        cin >> topic;
+        SendMessageToServer(topic);
+    }
+    //Modify the below part based on how the data is stored in the database
+    ReceiveMessageFromServer(); //receive table of IPs and file names
+    cout << "Enter the Publisher IP address:";
+    cin >> PublisherIP;
+    setPublisherIP(PublisherIP);
+    SendMessageToServer(PublisherIP);
+    ReceiveMessageFromServer(); //Receive key of the publisher from the server
 }
 
-void SubscriberConnection::connectToPublisher(char* Pub_IP){
+void SubscriberConnection::connectToPublisher(char* Pub_IP){ //connection to publisher works
+    
     SubToPubSockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(SubToPubSockfd < 0){
         error("ERROR opening socket");
     }
-    cout << "OK";
+
     bzero(&publisher_as_server,sizeof(publisher_as_server));
     publisher_as_server.sin_family = AF_INET;
     publisher_as_server.sin_addr.s_addr = INADDR_ANY;
@@ -132,11 +166,18 @@ void SubscriberConnection::connectToPublisher(char* Pub_IP){
     if (connect(SubToPubSockfd,(struct sockaddr *) &publisher_as_server,sizeof(publisher_as_server)) < 0) {
         error("ERROR connecting");
     }
-    cout<<"Connected to server";
+    cout<<"Connected to Publisher\n";
+    cout << "Message from Publisher:";
+    ReceiveMessageFromPublisher();
 }
 
 int main(int argc, char** argv){
     SubscriberConnection *subscriber = new SubscriberConnection();
-    subscriber->connectToServer(argv[1]);
-    //subscriber->ReceiveFileFromPublisher();
+    //subscriber->connectToServer(argv[1]);//done
+    //subscriber->subscribe();//done
+    //char* PublisherIP;
+    //char* filename;
+    //PublisherIP = subscriber->getPublisherIP();
+    subscriber->connectToPublisher("127.0.0.1");
+    subscriber->ReceiveFileFromPublisher("hello.txt");
 }
