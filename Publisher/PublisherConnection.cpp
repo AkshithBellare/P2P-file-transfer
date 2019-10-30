@@ -4,7 +4,7 @@
 #include <stdlib.h>  
 #include <errno.h>  
 #include <unistd.h>     
-#include <arpa/inet.h>      
+#include <arpa/inet.h> 
 #include <sys/types.h>  
 #include <sys/socket.h>  
 #include <netinet/in.h>
@@ -20,8 +20,8 @@ class PublisherConnection
 {
 	public :
 		struct sockaddr_in ALSServAddr;
-		int ALSSockFd;
-		int ALCSockFd, ALCNewSockFd;
+		int ALSSockFd,ALSNewSockFd;
+		int ALCSockFd;
 		char buffer[4098];
 		socklen_t SubLen;
      	struct sockaddr_in ALCServAddr, Sub_Addr;
@@ -30,56 +30,58 @@ class PublisherConnection
 		void listenForSubscriber();//server
 		void serverShowsList();
 		void sendCategoryAndFile();
+		void askForFile();
 		void sendFileToSub(char *file);
-		void error(const char *msg){
+		void error(const char *msg)
+		{
     		perror(msg);
     		exit(0);
 		}
 };
 void PublisherConnection::connectToServer(){
 
-	ALSSockFd=socket(AF_INET,SOCK_STREAM,0);
-	if (ALSSockFd < 0) {
+	ALCSockFd=socket(AF_INET,SOCK_STREAM,0);
+	if (ALCSockFd < 0) {
         error("ERROR opening socket");
 	}
-	bzero(&ALSServAddr,sizeof(ALSServAddr));
-	ALSServAddr.sin_family=AF_INET;
-	ALSServAddr.sin_port=htons(SERV_PORT);
+	bzero(&ALCServAddr,sizeof(ALCServAddr));
+	ALCServAddr.sin_family=AF_INET;
+	ALCServAddr.sin_port=htons(SERV_PORT);
 
-	inet_pton(AF_INET,SERV_IP,&ALSServAddr.sin_addr);
-    if (connect(ALSSockFd,(struct sockaddr *) &ALSServAddr,sizeof(ALSServAddr)) < 0) {
+	inet_pton(AF_INET,SERV_IP,&ALCServAddr.sin_addr);
+    if (connect(ALCSockFd,(struct sockaddr *) &ALCServAddr,sizeof(ALCServAddr)) < 0) {
         error("ERROR connecting");
     }
     cout<<"Connected to server";
 }
 void PublisherConnection::listenForSubscriber(){
-	 ALCSockFd = socket(AF_INET, SOCK_STREAM, 0);
-     if (ALCSockFd < 0) 
+	 ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
+     if (ALSSockFd < 0) 
         error("ERROR opening socket");
-     bzero((char *) &ALCServAddr, sizeof(ALCServAddr));
-     ALCServAddr.sin_family = AF_INET;
-     ALCServAddr.sin_addr.s_addr = INADDR_ANY;
-     ALCServAddr.sin_port = htons(PORT_PUB_SUB);
-     if (bind(ALCSockFd, (struct sockaddr *) &ALCServAddr,sizeof(ALCServAddr)) < 0){
+     bzero((char *) &ALSServAddr, sizeof(ALSServAddr));
+     ALSServAddr.sin_family = AF_INET;
+     ALSServAddr.sin_addr.s_addr = INADDR_ANY;
+     ALSServAddr.sin_port = htons(PORT_PUB_SUB);
+     if (bind(ALSSockFd, (struct sockaddr *) &ALSServAddr,sizeof(ALSServAddr)) < 0){
         error("ERROR on binding");	
      }
-     listen(ALCSockFd,5);
+     listen(ALSSockFd,5);
      SubLen = sizeof(Sub_Addr);
-     ALCNewSockFd = accept(ALCSockFd,(struct sockaddr *) &Sub_Addr,&SubLen);
-     if (ALCNewSockFd < 0){
+     ALSNewSockFd = accept(ALSSockFd,(struct sockaddr *) &Sub_Addr,&SubLen);
+     if (ALSNewSockFd < 0){
      	error("ERROR on accept");
      }
+	 else{
+		 cout<<"Connected to Subscriber";
+	 }
 
 }
 void PublisherConnection::serverShowsList(){
 	bzero(buffer,256);
     int n = read(ALCSockFd,buffer,255);
-    if (n < 0){
+    if (n < 0) 
         error("ERROR reading from socket");
-	}
-	cout << buffer;
 }
-
 void PublisherConnection::sendCategoryAndFile(){
 	string category,fileName;
 	int n;
@@ -95,31 +97,55 @@ void PublisherConnection::sendCategoryAndFile(){
 	if (n < 0) 
     	error("Error writing to socket");
 }
+void PublisherConnection::askForFile(){
+	int n;
+	string buf="What is the required file";
+	int len=sizeof(buf)/sizeof(string);
+	n = write(ALCSockFd,buf.c_str(),len); 
+	if (n < 0) 
+    	error("Error writing to socket");
+	else
+		bzero(buffer,256);
+		int n = read(ALCSockFd,buffer,255);
+		if (n < 0) 
+			error("ERROR reading from socket");
+		else
+		{
+			sendFileToSub(buffer);
+		}
+}
+void PublisherConnection::sendFileToSub(char *fileName){
 
-void PublisherConnection::sendFileToSub(char *file){
-	char *fileContents;
-	FILE *fp;
-	fp = fopen(file, "r+");
-	if(fp == NULL){
-		cout<<"Error opening file, exiting...\n";
-		return;
-	}
-	fscanf(fp, "%c", fileContents);
-	int sent_bytes = send(PORT_PUB_SUB, fileContents, sizeof(fileContents), 0);
-	if(sent_bytes>0)
-		cout<<"Sent files succesfully!\n";
+	FILE *f;
+    int words = 0;
+    char c;
+    f=fopen(fileName,"r");
+    while((c=getc(f))!=EOF)			//Counting No of words in the file
+	{	
+		fscanf(f , "%s" , buffer);
+		if(isspace(c)||c=='\t')
+		words++;	
+	}  
+	write(ALSNewSockFd, &words, sizeof(int));
+	rewind(f);
+    char ch ;
+       while(ch != EOF)
+      {		
+		fscanf(f , "%s" , buffer);
+		write(ALSNewSockFd,buffer,512);
+		ch = fgetc(f);
+      }
+	printf("The file was sent successfully");
 }
 
 int main(int argc,char *argv[]){
-	PublisherConnection *publisher=new PublisherConnection();
-	publisher->connectToServer();
-	publisher->serverShowsList();
-	publisher->sendCategoryAndFile();
-
-
+	PublisherConnection *obj=new PublisherConnection();
+	obj->connectToServer();
+	obj->serverShowsList();
+	obj->sendCategoryAndFile();
 	//server asks for file and category
-
-	publisher->listenForSubscriber();
+	obj->listenForSubscriber();
+	obj->askForFile();
 
 
 
