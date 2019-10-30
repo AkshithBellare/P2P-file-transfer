@@ -15,6 +15,7 @@ using namespace std;
 
 #define SERV_PORT 6000
 #define SUB_PUB_PORT 4000
+
 class SubscriberConnection{
 public:
     char buffer[4098]; //this buffer is used to receive messages
@@ -67,6 +68,8 @@ void SubscriberConnection::SendMessageToPublisher(char* message){ //To send mess
 }
 
 void SubscriberConnection::ReceiveFileFromPublisher(char* fileName){ //To receive file from the publisher
+ cout << fileName;
+ send(SubscriberSockfd,fileName,sizeof(fileName),0);
  int ch = 0;
  char buffer[256]= {0};
  FILE* fp;
@@ -80,8 +83,7 @@ void SubscriberConnection::ReceiveFileFromPublisher(char* fileName){ //To receiv
  read(SubToPubSockfd,buffer, 255);
  fprintf(fp,"%s",buffer);
  ch++;
- }
- 
+ } 
  printf("The file was received successfully\n\n");
  }
 
@@ -111,7 +113,7 @@ void SubscriberConnection::connectToServer(char* argv){
         error("ERROR connecting");
         exit(-1);
     }
-    cout<<"Connected to server";
+    cout <<"Connected to server";
     ReceiveMessageFromServer();
     /**int received_bytes = recv(SubscriberSockfd, buffer, sizeof(buffer), 0);
      if(received_bytes < 0){
@@ -121,15 +123,6 @@ void SubscriberConnection::connectToServer(char* argv){
      **/
 }
 
-void SubscriberConnection::serverShowsListOfTopics(){
-    bzero(buffer,256);
-    int n = read(SubscriberSockfd,buffer,255);
-    if (n < 0){
-        error("ERROR reading from socket");
-    }
-    cout << buffer;
-}
-
 void SubscriberConnection::subscribe(){ //subscriber is done
     SendMessageToServer("Subscribe");
     ReceiveMessageFromServer(); //Receive list of topics from the subscriber
@@ -137,10 +130,8 @@ void SubscriberConnection::subscribe(){ //subscriber is done
     int max = 0;
     char* topic;
     char* PublisherIP;
-    while(max!=5){
-        cin >> topic;
-        SendMessageToServer(topic);
-    }
+    cin >> topic;
+    SendMessageToServer(topic);
     //Modify the below part based on how the data is stored in the database
     ReceiveMessageFromServer(); //receive table of IPs and file names
     cout << "Enter the Publisher IP address:";
@@ -179,5 +170,8 @@ int main(int argc, char** argv){
     //char* filename;
     //PublisherIP = subscriber->getPublisherIP();
     subscriber->connectToPublisher("127.0.0.1");
-    subscriber->ReceiveFileFromPublisher("hello.txt");
+    char fileName[100];
+    cout << "Enter the name of the file you want to receive:";
+    cin >> fileName;
+    subscriber->ReceiveFileFromPublisher(fileName);
 }
