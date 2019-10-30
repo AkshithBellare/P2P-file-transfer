@@ -4,13 +4,13 @@
 #include <stdlib.h>  
 #include <errno.h>  
 #include <unistd.h>     
-#include <arpa/inet.h> 
+#include <arpa/inet.h>      
 #include <sys/types.h>  
 #include <sys/socket.h>  
 #include <netinet/in.h>
 #include <sys/time.h> 
 
-#define SERV_PORT 8888
+#define SERV_PORT 5000
 #define PORT_PUB_SUB 4000
 #define SERV_IP "10.50.19.120"
 
@@ -26,7 +26,7 @@ class PublisherConnection
 		socklen_t SubLen;
      	struct sockaddr_in ALCServAddr, Sub_Addr;
 
-		void connectToServer();//acts like client
+		void connectToServer(char* argv);//acts like client
 		void listenForSubscriber();//server
 		void serverShowsList();
 		void sendCategoryAndFile();
@@ -38,21 +38,26 @@ class PublisherConnection
     		exit(0);
 		}
 };
-void PublisherConnection::connectToServer(){
-
-	ALCSockFd=socket(AF_INET,SOCK_STREAM,0);
-	if (ALCSockFd < 0) {
+void PublisherConnection::connectToServer(char* argv){
+	ALCSockFd = socket(AF_INET,SOCK_STREAM,0);
+    if(ALCSockFd < 0) {
         error("ERROR opening socket");
-	}
-	bzero(&ALCServAddr,sizeof(ALCServAddr));
-	ALCServAddr.sin_family=AF_INET;
-	ALCServAddr.sin_port=htons(SERV_PORT);
-
-	inet_pton(AF_INET,SERV_IP,&ALCServAddr.sin_addr);
-    if (connect(ALCSockFd,(struct sockaddr *) &ALCServAddr,sizeof(ALCServAddr)) < 0) {
+    }
+    
+    bzero(&ALCServAddr,sizeof(ALCServAddr));
+    ALCServAddr.sin_family=AF_INET;
+    ALCServAddr.sin_addr.s_addr = INADDR_ANY;
+    ALCServAddr.sin_port=htons(SERV_PORT);
+    
+    inet_pton(AF_INET,argv,&ALCServAddr.sin_addr);
+    
+    if (connect(ALCSockFd,(struct sockaddr*)&ALCServAddr,sizeof(ALCServAddr)) < 0) {
         error("ERROR connecting");
+        exit(-1);
     }
     cout<<"Connected to server";
+    recv(ALCSockFd, buffer,sizeof(buffer),0);
+    cout << buffer << "\n";
 }
 void PublisherConnection::listenForSubscriber(){
 	 ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -106,7 +111,7 @@ void PublisherConnection::askForFile(){
     	error("Error writing to socket");
 	else
 		bzero(buffer,256);
-		int n = read(ALCSockFd,buffer,255);
+		n = read(ALCSockFd,buffer,255);
 		if (n < 0) 
 			error("ERROR reading from socket");
 		else
@@ -140,12 +145,12 @@ void PublisherConnection::sendFileToSub(char *fileName){
 
 int main(int argc,char *argv[]){
 	PublisherConnection *obj=new PublisherConnection();
-	obj->connectToServer();
-	obj->serverShowsList();
-	obj->sendCategoryAndFile();
+	obj->connectToServer(argv[1]);
+	//obj->serverShowsList();
+	//obj->sendCategoryAndFile();
 	//server asks for file and category
-	obj->listenForSubscriber();
-	obj->askForFile();
+	//obj->listenForSubscriber();
+	//obj->askForFile();
 
 
 

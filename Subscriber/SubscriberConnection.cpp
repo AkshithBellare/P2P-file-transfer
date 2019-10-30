@@ -26,9 +26,9 @@ public:
     int SubToPubSockfd;
     struct sockaddr_in publisher_as_server;
     void connectToServer(char* argv);
-    void connectToPublisher();
+    void connectToPublisher(char* Pub_IP);
     void serverShowsListOfTopics();
-    void subscribe();
+    void subscribe_to_a_topic();
     void ReceiveMessageFromServer();
     void ReceiveFileFromPublisher();
     void sendFileNameToServer(char* filename);
@@ -69,7 +69,7 @@ void SubscriberConnection::sendFileNameToServer(char* filename){
 
 void SubscriberConnection::connectToServer(char* argv){
     //char buffer[100]= {0};
-    char ack[13] = "acknowledged";
+    char* ack = "hello";
     SubscriberSockfd = socket(AF_INET,SOCK_STREAM,0);
     if(SubscriberSockfd < 0) {
         error("ERROR opening socket");
@@ -80,15 +80,17 @@ void SubscriberConnection::connectToServer(char* argv){
     server_address.sin_addr.s_addr = INADDR_ANY;
     server_address.sin_port=htons(SERV_PORT);
     
-    inet_pton(AF_INET,SERV_IP,&server_address.sin_addr);
+    inet_pton(AF_INET,argv,&server_address.sin_addr);
     
     if (connect(SubscriberSockfd,(struct sockaddr*)&server_address,sizeof(server_address)) < 0) {
         error("ERROR connecting");
         exit(-1);
     }
     cout<<"Connected to server";
+    while(1){
     recv(SubscriberSockfd, buffer,sizeof(buffer),0);
     cout << buffer << "\n";
+    }
     send(SubscriberSockfd,ack,sizeof(ack),0);
     /**int received_bytes = recv(SubscriberSockfd, buffer, sizeof(buffer), 0);
      if(received_bytes < 0){
@@ -107,13 +109,13 @@ void SubscriberConnection::serverShowsListOfTopics(){
     cout << buffer;
 }
 
-void SubscriberConnection::subscribe(){
+void SubscriberConnection::subscribe_to_a_topic(){
     cout << "Enter the topics you want to subscribe to:";
     cin >> buffer;
     send(SubscriberSockfd, buffer, strlen(buffer),0);
 }
 
-void SubscriberConnection::connectToPublisher(){
+void SubscriberConnection::connectToPublisher(char* Pub_IP){
     SubToPubSockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(SubToPubSockfd < 0){
         error("ERROR opening socket");
@@ -124,7 +126,7 @@ void SubscriberConnection::connectToPublisher(){
     publisher_as_server.sin_addr.s_addr = INADDR_ANY;
     publisher_as_server.sin_port = htons(SUB_PUB_PORT);
     
-    inet_pton(AF_INET,PUBLISHER_IP,&publisher_as_server.sin_addr);
+    inet_pton(AF_INET,Pub_IP,&publisher_as_server.sin_addr);
     if (connect(SubToPubSockfd,(struct sockaddr *) &publisher_as_server,sizeof(publisher_as_server)) < 0) {
         error("ERROR connecting");
     }
