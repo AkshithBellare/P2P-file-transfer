@@ -329,16 +329,15 @@ int main(int argc, char **argv){
     if( pid == 0 ){
 
         //for subscriber connections
+        cout<<"Listening for subscribers\n";
         server->openSubConnection();
     }else if( pid > 0 ){
 
         //for publisher connections
+        cout<<"Listening for publishers\n";
         server->openPubConnection();
     }else{
         cout<<"fork failed\n";
-    }
-
-    //server->openPubConnection();
-    
+    }    
 
 }
