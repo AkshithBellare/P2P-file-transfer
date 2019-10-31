@@ -10,11 +10,12 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <string.h>
+#include <netdb.h>
 
 using namespace std;
 
 #define SERV_PORT 6000
-#define SUB_PUB_PORT 4000
+#define SUB_PUB_PORT 7000
 
 char* Publisher_IP = " ";
 long key = 0;
@@ -40,7 +41,7 @@ public:
     
     //publisher side functions
     void connectToPublisher(char* Pub_IP);
-    void ReceiveFileFromPublisher(char* filename);
+    void ReceiveFileFromPublisher();
     void ReceiveMessageFromPublisher();
     void SendMessageToPublisher(char* message);
     void error(const char *msg){
@@ -62,8 +63,16 @@ void SubscriberConnection::SendMessageToServer(char* message){ //To send message
 
 void SubscriberConnection::ReceiveMessageFromPublisher(){ //To receive messages from the Publisher
     char buffer[4098] = {0};
-    recv(SubToPubSockfd,buffer,sizeof(buffer),0);
-    cout << buffer;
+    int bytesRcvd;
+    string str;
+
+    do{
+        bytesRcvd = recv(SubToPubSockfd,buffer,sizeof(buffer)-2,0);
+        buffer[bytesRcvd] = '\0';
+        str+=buffer;
+    }while(bytesRcvd!=0);
+
+    cout<<str;
 }
 
 long SubscriberConnection::ReceiveKeyFromServer(){
@@ -76,8 +85,9 @@ void SubscriberConnection::SendMessageToPublisher(char* message){ //To send mess
     send(SubToPubSockfd,message,sizeof(message),0);
 }
 
-void SubscriberConnection::ReceiveFileFromPublisher(char* fileName){ //To receive file from the publisher
- cout << fileName;
+void SubscriberConnection::ReceiveFileFromPublisher(){ //To receive file from the publisher
+    char* fileName  = "test.txt";
+    //getline(cin,fileName);
  send(SubscriberSockfd,fileName,sizeof(fileName),0);
  int ch = 0;
  char buffer[256]= {0};
@@ -94,7 +104,7 @@ void SubscriberConnection::ReceiveFileFromPublisher(char* fileName){ //To receiv
  ch++;
  } 
  printf("The file was received successfully\n\n");
- }
+}
 
 void SubscriberConnection::connectToServer(char* argv){
     
@@ -115,7 +125,7 @@ void SubscriberConnection::connectToServer(char* argv){
         exit(-1);
     }
     cout <<"Connected to server";
-   
+    send(SubscriberSockfd,"hello",6,0);
     ReceiveMessageFromServer();
  
     //ReceiveKeyFromServer();
@@ -130,16 +140,15 @@ void SubscriberConnection::connectToServer(char* argv){
 void SubscriberConnection::subscribe(){ //subscriber is done
     SendMessageToServer("Subscribe");
     ReceiveMessageFromServer(); //Receive list of topics from the subscriber
-    cout << "Enter the topics you want to subscriber to\n";
-    int max = 0;
-    char* topic;
+    cout << "Enter the topics you want to subscribe to\n";
+    char* topic; //Topic to subscribe
     cin >> topic;
     SendMessageToServer(topic);
     //Modify the below part based on how the data is stored in the database
     ReceiveMessageFromServer(); //receive table of IPs and file names
     cout << "Enter the Publisher IP address:";
     cin >> Publisher_IP;
-    //SendMessageToServer(Publisher_IP);
+    SendMessageToServer(Publisher_IP);
     ReceiveKeyFromServer(); //Receive key of the publisher from the server
 }
 
@@ -149,13 +158,17 @@ void SubscriberConnection::connectToPublisher(char* Pub_IP){ //connection to pub
     if(SubToPubSockfd < 0){
         error("ERROR opening socket");
     }
-
+    struct hostent *server;
+    server = gethostbyname(Pub_IP);
     bzero(&publisher_as_server,sizeof(publisher_as_server));
     publisher_as_server.sin_family = AF_INET;
-    publisher_as_server.sin_addr.s_addr = INADDR_ANY;
+    bcopy((char*)server->h_addr,(char*)&publisher_as_server.sin_addr.s_addr,server->h_length);
+    //publisher_as_server.sin_addr.s_addr = INADDR_ANY;
     publisher_as_server.sin_port = htons(SUB_PUB_PORT);
     
     inet_pton(AF_INET,Pub_IP,&publisher_as_server.sin_addr);
+
+
     if (connect(SubToPubSockfd,(struct sockaddr *) &publisher_as_server,sizeof(publisher_as_server)) < 0) {
         error("ERROR connecting");
     }
@@ -166,30 +179,30 @@ void SubscriberConnection::connectToPublisher(char* Pub_IP){ //connection to pub
 
 int main(int argc, char** argv){
     SubscriberConnection *subscriber = new SubscriberConnection();
-    SubscriberConnection *connectToPublisher = new SubscriberConnection();
-    cout << "Trying to connect to server:" << argv[1];
-    subscriber->connectToServer(argv[1]);
-    //pid_t pid = fork();
+    //SubscriberConnection *connectToPublisher = new SubscriberConnection();
+    //cout << "Trying to connect to server:" << argv[1];
+    subscriber->connectToPublisher("192.168.43.47");
+    //subscriber->connectToPublisher("10.53.95.124");
+
+    pid_t pid = fork();
     
-    /**
+    
     if( pid == 0 ){
         cout << "opening a child";
-        subscriber->connectToServer(argv[1]);
-            key=3;
+        subscriber->connectToServer("192.168.43.30");
+        key=3;
 
     }else if( pid > 0 ){
         cout<<"ChilPAR\n";
         if(key > 0 ){
-connectToPublisher->connectToPublisher("10.50.19.120");
-cout<<"PUBLISHER\n";
+        subscriber->connectToPublisher("192.168.43.47");
+        subscriber->ReceiveFileFromPublisher();
+        cout << "PUBLISHER\n";
         }
-
-        
-
     }else{
         cout<<"fork failed\n";
     }
-   **/
+
     /**
     subscriber->connectToServer(argv[1]);//done
     //subscriber->subscribe();//done

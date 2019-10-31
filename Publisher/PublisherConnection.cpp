@@ -11,7 +11,7 @@
 #include <sys/time.h> 
 
 #define SERV_PORT 5000
-#define PORT_PUB_SUB 4000
+#define PORT_PUB_SUB 7000
 
 using namespace std;
 
@@ -155,6 +155,6 @@ int main(int argc,char *argv[]){
 	//obj->sendCategoryAndFile();
 	//server asks for file and category
 	obj->listenForSubscriber();
-	obj->sendFileToSub();
+	//obj->sendFileToSub();
 	//obj->askForFile();
 }
