@@ -10,9 +10,8 @@
 #include <netinet/in.h>
 #include <sys/time.h> 
 
-#define SERV_PORT 8888
-#define PORT_PUB_SUB 4000
-#define SERV_IP "10.50.19.120"
+#define SERV_PORT 5000
+#define PORT_PUB_SUB 7000
 
 using namespace std;
 
@@ -26,43 +25,52 @@ class PublisherConnection
 		socklen_t SubLen;
      	struct sockaddr_in ALCServAddr, Sub_Addr;
 
-		void connectToServer();//acts like client
+		void connectToServer(char* argv);//acts like client
 		void listenForSubscriber();//server
 		void serverShowsList();
 		void sendCategoryAndFile();
 		void askForFile();
-		void sendFileToSub(char *file);
+		void sendFileToSub();
 		void error(const char *msg)
 		{
     		perror(msg);
     		exit(0);
 		}
 };
-void PublisherConnection::connectToServer(){
-
-	ALCSockFd=socket(AF_INET,SOCK_STREAM,0);
-	if (ALCSockFd < 0) {
+void PublisherConnection::connectToServer(char* argv){
+	ALCSockFd = socket(AF_INET,SOCK_STREAM,0);
+    if(ALCSockFd < 0) {
         error("ERROR opening socket");
-	}
-	bzero(&ALCServAddr,sizeof(ALCServAddr));
-	ALCServAddr.sin_family=AF_INET;
-	ALCServAddr.sin_port=htons(SERV_PORT);
-
-	inet_pton(AF_INET,SERV_IP,&ALCServAddr.sin_addr);
-    if (connect(ALCSockFd,(struct sockaddr *) &ALCServAddr,sizeof(ALCServAddr)) < 0) {
+    }
+    
+    bzero(&ALCServAddr,sizeof(ALCServAddr));
+    ALCServAddr.sin_family=AF_INET;
+    ALCServAddr.sin_addr.s_addr = INADDR_ANY;
+    ALCServAddr.sin_port=htons(SERV_PORT);
+    
+    inet_pton(AF_INET,argv,&ALCServAddr.sin_addr);
+    
+    if (connect(ALCSockFd,(struct sockaddr*)&ALCServAddr,sizeof(ALCServAddr)) < 0) {
         error("ERROR connecting");
+        exit(-1);
     }
     cout<<"Connected to server";
+    recv(ALCSockFd, buffer,sizeof(buffer),0);
+    cout << buffer << "\n";
 }
 void PublisherConnection::listenForSubscriber(){
+	 
 	 ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
      if (ALSSockFd < 0) 
         error("ERROR opening socket");
-     bzero((char *) &ALSServAddr, sizeof(ALSServAddr));
-     ALSServAddr.sin_family = AF_INET;
+     
+	 bzero((char *) &ALSServAddr, sizeof(ALSServAddr));
+     
+	 ALSServAddr.sin_family = AF_INET;
      ALSServAddr.sin_addr.s_addr = INADDR_ANY;
      ALSServAddr.sin_port = htons(PORT_PUB_SUB);
-     if (bind(ALSSockFd, (struct sockaddr *) &ALSServAddr,sizeof(ALSServAddr)) < 0){
+     
+	 if (bind(ALSSockFd, (struct sockaddr *) &ALSServAddr,sizeof(ALSServAddr)) < 0){
         error("ERROR on binding");	
      }
      listen(ALSSockFd,5);
@@ -74,7 +82,7 @@ void PublisherConnection::listenForSubscriber(){
 	 else{
 		 cout<<"Connected to Subscriber";
 	 }
-
+	 send(ALSNewSockFd,"connected",10,0);
 }
 void PublisherConnection::serverShowsList(){
 	bzero(buffer,256);
@@ -99,27 +107,29 @@ void PublisherConnection::sendCategoryAndFile(){
 }
 void PublisherConnection::askForFile(){
 	int n;
-	string buf="What is the required file";
-	int len=sizeof(buf)/sizeof(string);
-	n = write(ALCSockFd,buf.c_str(),len); 
+	char * message="What is the required file";
+	send(ALCSockFd,message,sizeof(message),0); 
 	if (n < 0) 
     	error("Error writing to socket");
 	else
 		bzero(buffer,256);
-		int n = read(ALCSockFd,buffer,255);
+		n = read(ALCSockFd,buffer,255);
 		if (n < 0) 
 			error("ERROR reading from socket");
 		else
 		{
-			sendFileToSub(buffer);
+			sendFileToSub();
 		}
 }
-void PublisherConnection::sendFileToSub(char *fileName){
-
+void PublisherConnection::sendFileToSub(){
+	char filename[100];
+	
+	recv(ALSSockFd,filename,sizeof(filename),0);
+	
 	FILE *f;
     int words = 0;
     char c;
-    f=fopen(fileName,"r");
+    f=fopen(filename,"r");
     while((c=getc(f))!=EOF)			//Counting No of words in the file
 	{	
 		fscanf(f , "%s" , buffer);
@@ -140,13 +150,11 @@ void PublisherConnection::sendFileToSub(char *fileName){
 
 int main(int argc,char *argv[]){
 	PublisherConnection *obj=new PublisherConnection();
-	obj->connectToServer();
-	obj->serverShowsList();
-	obj->sendCategoryAndFile();
+	//obj->connectToServer(argv[1]);
+	//obj->serverShowsList();
+	//obj->sendCategoryAndFile();
 	//server asks for file and category
 	obj->listenForSubscriber();
-	obj->askForFile();
-
-
-
+	//obj->sendFileToSub();
+	//obj->askForFile();
 }
