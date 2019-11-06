@@ -14,6 +14,7 @@
 #define PORT_PUB_SUB 7000
 
 #define SERV_IP "127.0.0.1"
+string KEY="123456\n";
 
 using namespace std;
 
@@ -29,9 +30,9 @@ public:
 
 	string receive(int);
 	void connectToServer(); //acts like client
-	void receiveMessageFromServer();
-	void sendMessageToServer(char *);
-	void receiveMessageFromSubscriber();
+	//void receiveMessageFromServer();
+	//void sendMessageToServer(char *);
+	//void receiveMessageFromSubscriber();
 	void listenForSubscriber(); //server
 	void serverShowsList();
 	void sendCategoryAndFile();
@@ -58,7 +59,7 @@ string PublisherConnection::receive(int socket)
 
 	return receivedData;
 }
-void PublisherConnection::receiveMessageFromServer()
+/*void PublisherConnection::receiveMessageFromServer()
 { //To receive messages from the server
 	//char buffer[4098] = {0};
 	//recv(ALCSockFd, buffer, sizeof(buffer), 0);
@@ -75,7 +76,7 @@ void PublisherConnection::receiveMessageFromSubscriber()
 	recv(ALSNewSockFd, buffer, sizeof(buffer), 0);
 	cout << buffer;
 }
-
+*/
 void PublisherConnection::connectToServer()
 {
 
@@ -88,31 +89,32 @@ void PublisherConnection::connectToServer()
 	ALCServAddr.sin_family = AF_INET;
 	ALCServAddr.sin_addr.s_addr = INADDR_ANY;
 	ALCServAddr.sin_port = htons(SERV_PORT);
-
 	inet_pton(AF_INET, SERV_IP, &ALCServAddr.sin_addr);
 	if (connect(ALCSockFd, (struct sockaddr *)&ALCServAddr, sizeof(ALCServAddr)) < 0)
 	{
 		error("ERROR connecting");
 	}
 	cout << "Connected to server";
-	while (1)
-		receiveMessageFromServer();
+	//read(ALCSockFd,buffer,sizeof(buffer));
+	//sending key to server
+	write(ALCSockFd,KEY.c_str(),sizeof(KEY));
+	serverShowsList();
 }
 void PublisherConnection::listenForSubscriber()
 {
 
 	ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (ALSSockFd < 0)
-		error("ERROR opening socket");
+		error("ERROR opening socket\n");
 	else
 		printf("Socket successfully created..\n");
 	bzero((char *)&ALSServAddr, sizeof(ALSServAddr));
 	ALSServAddr.sin_family = AF_INET;
-	ALSServAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	ALSServAddr.sin_addr.s_addr = INADDR_ANY;
 	ALSServAddr.sin_port = htons(PORT_PUB_SUB);
 	if (bind(ALSSockFd, (struct sockaddr *)&ALSServAddr, sizeof(ALSServAddr)) < 0)
 	{
-		error("ERROR on binding");
+		error("ERROR on binding\n");
 	}
 	else
 		printf("Socket successfully binded..\n");
@@ -127,7 +129,7 @@ void PublisherConnection::listenForSubscriber()
 	ALSNewSockFd = accept(ALSSockFd, (struct sockaddr *)&Sub_Addr, &SubLen);
 	if (ALSNewSockFd < 0)
 	{
-		error("ERROR on accept");
+		error("ERROR on accept\n");
 	}
 	else
 		cout << "Connected to Subscriber\n";
@@ -136,30 +138,28 @@ void PublisherConnection::listenForSubscriber()
 void PublisherConnection::serverShowsList()
 {
 	bzero(buffer, 256);
-	string list = receive(ALSNewSockFd);
-	cout << list;
-	/*int n = read(ALCSockFd, buffer, 255);
+	int n = read(ALCSockFd, buffer, 255);
 	if (n < 0)
-		error("ERROR reading from socket");*/
+		error("ERROR reading from socket\n");
+	sendCategoryAndFile();
 }
 void PublisherConnection::sendCategoryAndFile()
 {
 	string category, fileName;
 	int n;
-	cout << "Enter Category";
+	cout << "Enter Category\n";
 	cin >> category;
-	cout << "Enter File name";
+	cout << "Enter File name\n";
 	cin >> fileName;
 
 	string buf = category + ":" + fileName;
 
 	n = write(ALCSockFd, buf.c_str(), 255); //Hardcoded length
 	if (n < 0)
-		error("Error writing to socket");
+		error("Error writing to socket\n");
 }
 void PublisherConnection::askForFile()
 {
-	string key = "123456\n";
 	char buff[1024];
 	int n, i;
 
@@ -172,7 +172,7 @@ void PublisherConnection::askForFile()
 	bzero(buff, sizeof(buff));
 	read(ALSNewSockFd, buff, sizeof(buff));
 	string inputKey(buff);
-	if (key.compare(inputKey) == 0)
+	if (KEY.compare(inputKey) == 0)
 	{
 		string message = "verified";
 		write(ALSNewSockFd, message.c_str(), sizeof(buff));
@@ -180,7 +180,7 @@ void PublisherConnection::askForFile()
 		//receving file name
 		bzero(buff, sizeof(buff));
 		read(ALSNewSockFd, buff, sizeof(buff));
-		cout << "Publisher asked for:\n" << buff;
+		cout << "Publisher asked for: " << buff<<"\n";
 		sendFileToSub(buff);
 		//printf("From Subscriber : %s", buff);
 		//}
@@ -193,7 +193,6 @@ void PublisherConnection::askForFile()
 }
 void PublisherConnection::sendFileToSub(const char *fileName)
 {
-
 	FILE *f;
 	int words = 0;
 	char c;
@@ -213,14 +212,13 @@ void PublisherConnection::sendFileToSub(const char *fileName)
 		write(ALSNewSockFd, buffer, 512);
 		ch = fgetc(f);
 	}
-	printf("The file was sent successfully");
+	printf("The file was sent successfully\n");
 }
 
 int main(int argc, char *argv[])
 {
 	PublisherConnection *withServer = new PublisherConnection();
 	PublisherConnection *withSubscriber = new PublisherConnection();
-	//cout<<"akm";
 	withSubscriber->listenForSubscriber();
 	//withServer->connectToServer();
 	/*
