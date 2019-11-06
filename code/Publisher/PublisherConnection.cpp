@@ -130,7 +130,7 @@ void PublisherConnection::listenForSubscriber()
 		error("ERROR on accept");
 	}
 	else
-		cout << "Connected to Subscriber";
+		cout << "Connected to Subscriber\n";
 	askForFile();
 }
 void PublisherConnection::serverShowsList()
@@ -164,9 +164,9 @@ void PublisherConnection::askForFile()
 	int n, i;
 
 	//asks to enter key
-	string message="Please enter the key";
+	string message="Please enter the key\n";
 	write(ALSNewSockFd,message.c_str(),sizeof(message));
-	cout<<"Asked For key";
+	cout<<"Asked For key\n";
 	
 	//receives key;
 	bzero(buff, sizeof(buff));
@@ -180,7 +180,7 @@ void PublisherConnection::askForFile()
 		//receving file name
 		bzero(buff, sizeof(buff));
 		read(ALSNewSockFd, buff, sizeof(buff));
-		cout << "\nPublisher asked for:" << buff;
+		cout << "Publisher asked for:\n" << buff;
 		sendFileToSub(buff);
 		//printf("From Subscriber : %s", buff);
 		//}
