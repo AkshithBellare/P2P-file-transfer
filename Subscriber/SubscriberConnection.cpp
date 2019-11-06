@@ -88,22 +88,23 @@ void SubscriberConnection::SendMessageToPublisher(char* message){ //To send mess
 void SubscriberConnection::ReceiveFileFromPublisher(){ //To receive file from the publisher
     char* fileName  = "test.txt";
     //getline(cin,fileName);
- send(SubscriberSockfd,fileName,sizeof(fileName),0);
- int ch = 0;
- char buffer[256]= {0};
- FILE* fp;
- recv(SubToPubSockfd, fileName, strlen(fileName),0);
- fp = fopen(fileName, "a");
- int words;
- 
- read(SubToPubSockfd, &words, sizeof(int));
- 
- while(ch!=words){
- read(SubToPubSockfd,buffer, 255);
- fprintf(fp,"%s",buffer);
- ch++;
- } 
- printf("The file was received successfully\n\n");
+    write(SubscriberSockfd,fileName,sizeof(fileName));
+    int ch = 0;
+    char buffer[256]= {0};
+    FILE* fp;
+    //recv(SubToPubSockfd, fileName, strlen(fileName),0);
+    fp = fopen(fileName, "a");
+    int words;
+
+    read(SubToPubSockfd, &words, sizeof(int));
+    cout<<words;
+    while(ch!=words){
+        read(SubToPubSockfd,buffer, 255);
+        fprintf(fp,"%s",buffer);
+        cout<<buffer;
+        ch++;
+    } 
+    printf("The file was received successfully\n\n");
 }
 
 void SubscriberConnection::connectToServer(char* argv){
@@ -175,13 +176,14 @@ void SubscriberConnection::connectToPublisher(char* Pub_IP){ //connection to pub
     cout<<"Connected to Publisher\n";
     cout << "Message from Publisher:";
     ReceiveMessageFromPublisher();
+    ReceiveFileFromPublisher();
 }
 
 int main(int argc, char** argv){
     SubscriberConnection *subscriber = new SubscriberConnection();
     //SubscriberConnection *connectToPublisher = new SubscriberConnection();
     //cout << "Trying to connect to server:" << argv[1];
-    subscriber->connectToPublisher("192.168.43.47");
+    //subscriber->connectToPublisher("192.168.43.47");
     //subscriber->connectToPublisher("10.53.95.124");
 
     pid_t pid = fork();
@@ -189,16 +191,16 @@ int main(int argc, char** argv){
     
     if( pid == 0 ){
         cout << "opening a child";
-        subscriber->connectToServer("192.168.43.30");
+        subscriber->connectToServer("127.0.0.1");
         key=3;
 
     }else if( pid > 0 ){
         cout<<"ChilPAR\n";
-        if(key > 0 ){
+        //if(key > 0 ){
         subscriber->connectToPublisher("192.168.43.47");
-        subscriber->ReceiveFileFromPublisher();
+        //subscriber->ReceiveFileFromPublisher();
         cout << "PUBLISHER\n";
-        }
+        //}
     }else{
         cout<<"fork failed\n";
     }
