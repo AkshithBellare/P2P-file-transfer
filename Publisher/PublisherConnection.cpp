@@ -79,7 +79,7 @@ void PublisherConnection::receiveMessageFromSubscriber()
 */
 void PublisherConnection::connectToServer()
 {
-
+	//only runs for first time connection and only then
 	ALCSockFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (ALCSockFd < 0)
 	{
@@ -97,10 +97,35 @@ void PublisherConnection::connectToServer()
 	cout << "Connected to server";
 	//read(ALCSockFd,buffer,sizeof(buffer));
 	//sending key to server
-	recv(ALCSockFd, buffer, 15, 0);
+	recv(ALCSockFd, buffer, 33, 0);
 	cout<<buffer<<endl;
 	write(ALCSockFd,KEY.c_str(),sizeof(KEY));
-	serverShowsList();
+
+	//loop to send category and file
+	int ch;
+	do{
+		cout<<"Do you want to see the list of categories(1) or send new file(any number)  0 for exit?"<<endl;
+		cin>>ch;
+		switch (ch)
+		{
+		case 1:
+			serverShowsList();
+			break;
+		
+		case 2:
+			sendCategoryAndFile();
+			break;
+
+		case 0:{
+			close(ALCSockFd);
+			exit(0);
+			break;
+		}
+		default:
+			cout<<"Invalid choice!"<<endl;
+			break;
+		}
+	}while(ch!=0);
 }
 void PublisherConnection::listenForSubscriber()
 {
@@ -140,9 +165,11 @@ void PublisherConnection::listenForSubscriber()
 void PublisherConnection::serverShowsList()
 {
 	bzero(buffer, 256);
-	int n = read(ALCSockFd, buffer, 255);
-	if (n < 0)
+	if ( read(ALCSockFd, buffer, 5) < 0)
 		error("ERROR reading from socket\n");
+	else
+		cout<<buffer<<endl;
+	//prompt to enter category and file
 	sendCategoryAndFile();
 }
 void PublisherConnection::sendCategoryAndFile()
@@ -159,6 +186,8 @@ void PublisherConnection::sendCategoryAndFile()
 	n = write(ALCSockFd, buf.c_str(), 255); //Hardcoded length
 	if (n < 0)
 		error("Error writing to socket\n");
+	bzero(buffer, sizeof(buffer));
+	recv(ALCSockFd, buffer, sizeof(buffer), 0);
 }
 void PublisherConnection::askForFile()
 {

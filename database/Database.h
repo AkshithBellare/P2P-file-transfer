@@ -147,17 +147,19 @@ void Database::printError(string errorMessage)
 void Database::addPublisher(string IP, string key)
 {
     string sql("insert into publisher_details(ip_address,auth_key) values('" + IP + "' ,'" + key + "');");
-    cout<<sql<<endl;
+    cout<<"Adding new publisher"<<endl;
     insertIntoTable(sql);
 }
 void Database::addFile(int pubNo, string category, string file)
 {
     string sql("insert into files(publisher_id,category,file_name) values(" + to_string(pubNo) + ",'" + category + "','" + file + "');");
+    cout<<"adding file"<<endl;
     insertIntoTable(sql);
 }
 void Database::addSubscriber(string IP, string userName)
 {
     string sql("insert into subscriber_details(ip_address,user_name) values('" + IP + "' ,'" + userName + "');");
+    cout<<"Adding subscriber"<<endl;
     insertIntoTable(sql);
 }
 string Database::getCategoryList()

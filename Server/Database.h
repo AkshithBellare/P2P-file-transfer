@@ -11,8 +11,14 @@ public:
     const char *databaseName; //name of database
     sqlite3 *DB;
 
+    Database(){
+        databaseName="PUBLISHER.db";
+        openDatabase();
+    }    
+
     void printError(string);
     void openDatabase();
+
     void createTable(string);
     void displayContents(string);
     void insertIntoTable(string);
@@ -136,7 +142,7 @@ void Database::insertIntoTable(string sqlCommand)
         sqlite3_free(messageError);
     }
     else
-        cout << "Records created Successfully!";
+        cout << "Records created Successfully!"<<endl;
 }
 void Database::printError(string errorMessage)
 {
@@ -151,6 +157,7 @@ void Database::addPublisher(string IP, string key)
 void Database::addFile(int pubNo, string category, string file)
 {
     string sql("insert into files(publisher_id,category,file_name) values(" + to_string(pubNo) + ",'" + category + "','" + file + "');");
+    cout<<"adding file"<<endl;
     insertIntoTable(sql);
 }
 void Database::addSubscriber(string IP, string userName)

@@ -126,9 +126,6 @@ void ServerConnection::openPubConnection(){
             puts("Welcome message sent successfully");
 
             //adding only for initial connection
-            // char* buffer = "Enter your unique key\n";
-            // char* key = " ";
-            // send(new_sock,buffer,sizeof(buffer),0);
             char key[8];
             int key_size = recv(new_sock,key,sizeof(key),0);
 
@@ -151,25 +148,43 @@ void ServerConnection::openPubConnection(){
         //or an I/O operation
         for( int i=0; i < 10; i++ ){
             sd = client_socket[i];
-            memset(buffer, 0, 1024);
+            if( sd != 0 ){
+                memset(buffer, 0, 1024);
 
-            //check if it is in the list
-            if( FD_ISSET( sd, &readfds)){
-                //check and read the message, if zero, close connection
-                if( (rcvd_bytes = read(sd, buffer, 1024)) == 0){
-                    //get details of disconnected user
-                    getpeername( sd, (struct sockaddr*)&address, (socklen_t *)&addrlen);
-                    cout<<"Host disconnected from IP : "<< inet_ntoa(address.sin_addr)<<" at port : "<<ntohs(address.sin_port);
+                //check if it is in the list
+                if( FD_ISSET( sd, &readfds)){
+                    //check and read the message, if zero, close connection
+                    //if( (rcvd_bytes = read(sd, buffer, 1024)) == 0){
+                        if( write(sd, "LIST", 5) == -1){
+                        //get details of disconnected user
+                        getpeername( sd, (struct sockaddr*)&address, (socklen_t *)&addrlen);
+                        cout<<"Host disconnected from IP : "<< inet_ntoa(address.sin_addr)<<" at port : "<<ntohs(address.sin_port);
 
-                    //close the socket and set it to zero
-                    close(sd);
-                    client_socket[i] = 0;
-                }  
-                else{
-                    //Publisher operations begin
+                        //close the socket and set it to zero
+                        close(sd);
+                        client_socket[i] = 0;
+                    }  
+                    else{
+                        //Publisher operations begin
 
+                        //send(sd, "LIST", 5, 0);
+                        int recv_file_size;
+                        if( (recv_file_size = recv(sd, buffer, sizeof(buffer), 0)) > 0 ){
+                            cout<<"Received file deets"<<endl;
+                            cout<<buffer<<endl;
+                            string cat_file = buffer;
+                            string category, file;
 
+                            int pos = cat_file.find(":");
 
+                            category = cat_file.substr(0, pos-1);
+                            file = cat_file.substr(pos+1, recv_file_size-1);
+
+                            database->addFile(sd, category, file);
+                        }
+
+                        send(sd, "Add file success", 17, 0);
+                    }
                 }
             }
         }
