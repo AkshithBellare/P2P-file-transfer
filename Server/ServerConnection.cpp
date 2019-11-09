@@ -129,12 +129,13 @@ void ServerConnection::openPubConnection(){
             // char* buffer = "Enter your unique key\n";
             // char* key = " ";
             // send(new_sock,buffer,sizeof(buffer),0);
-            // int key_size = recv(new_sock,key,sizeof(key),0);
-            // database->addPublisher(inet_ntoa(address.sin_addr),key);
+            char key[8];
+            int key_size = recv(new_sock,key,sizeof(key),0);
 
-            // if(key_size == 6){
-            //     cout<<"Key received : "<<key<<endl;
-            // }
+            if(key_size > 0){
+                cout<<"Key received : "<<key<<endl;
+                database->addPublisher(inet_ntoa(address.sin_addr),key);
+            }
 
             //add new socket to array of sockets
             for( int i=0; i < 10; i++ ){

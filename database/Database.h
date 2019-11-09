@@ -12,7 +12,7 @@ public:
     sqlite3 *DB;
 
     void printError(string);
-    void openDatabase();
+    int openDatabase();
     void createTable(string);
     void displayContents(string);
     void insertIntoTable(string);
@@ -57,7 +57,7 @@ int select_callback(void *p_data, int num_fields, char **p_fields, char **p_col_
     }
     return 0;
 }
-void Database::openDatabase()
+int Database::openDatabase()
 {
     int exit = sqlite3_open(databaseName, &DB);
     if (exit)
@@ -66,6 +66,7 @@ void Database::openDatabase()
         cout << "Retrying";
         openDatabase();
     }
+    return 1;
     /*else
     {
         //cout << "Opened database successfully:\n"
@@ -127,6 +128,7 @@ void Database::deleteFromTable(string tableName, string condition)
 void Database::insertIntoTable(string sqlCommand)
 {
     char *messageError;
+    cout<<sqlCommand<<endl;
     int exit = sqlite3_exec(DB, sqlCommand.c_str(), NULL, 0, &messageError);
     if (exit != SQLITE_OK)
     {
@@ -145,6 +147,7 @@ void Database::printError(string errorMessage)
 void Database::addPublisher(string IP, string key)
 {
     string sql("insert into publisher_details(ip_address,auth_key) values('" + IP + "' ,'" + key + "');");
+    cout<<sql<<endl;
     insertIntoTable(sql);
 }
 void Database::addFile(int pubNo, string category, string file)
