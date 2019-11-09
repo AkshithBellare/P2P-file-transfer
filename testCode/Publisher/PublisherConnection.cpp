@@ -94,14 +94,14 @@ void PublisherConnection::connectToServer()
 	{
 		error("ERROR connecting");
 	}
-	cout << "Connected to server"<<endl;
+	cout << "Connected to server";
 	while (1)
 		receiveMessageFromServer();
 
-	// while(1)
-	// 	receiveMessageFromServer();
+	while(1)
+		receiveMessageFromServer();
 
-	sendMessageToServer("123456");
+	sendMessageToServer((char*)key);
 }
 void PublisherConnection::listenForSubscriber()
 {
@@ -135,7 +135,7 @@ void PublisherConnection::listenForSubscriber()
 		error("ERROR on accept");
 	}
 	else
-		cout << "Connected to Subscriber\n";
+		cout << "Connected to Subscriber";
 	askForFile();
 }
 void PublisherConnection::serverShowsList()
@@ -170,9 +170,9 @@ void PublisherConnection::askForFile()
 	int n, i;
 
 	//asks to enter key
-	string message="Please enter the key\n";
+	string message="Please enter the key";
 	write(ALSNewSockFd,message.c_str(),sizeof(message));
-	cout<<"Asked For key\n";
+	cout<<"Asked For key";
 	
 	//receives key;
 	bzero(buff, sizeof(buff));
@@ -186,7 +186,7 @@ void PublisherConnection::askForFile()
 		//receving file name
 		bzero(buff, sizeof(buff));
 		read(ALSNewSockFd, buff, sizeof(buff));
-		cout << "Publisher asked for:\n" << buff;
+		cout << "\nPublisher asked for:" << buff;
 		sendFileToSub(buff);
 		//printf("From Subscriber : %s", buff);
 		//}
@@ -197,6 +197,7 @@ void PublisherConnection::askForFile()
 		askForFile();
 	}
 }
+
 void PublisherConnection::sendFileToSub(const char *fileName)
 {
 
@@ -219,7 +220,7 @@ void PublisherConnection::sendFileToSub(const char *fileName)
 		write(ALSNewSockFd, buffer, 512);
 		ch = fgetc(f);
 	}
-	printf("The file was sent successfully\n");
+	printf("The file was sent successfully");
 }
 
 int main(int argc, char *argv[])

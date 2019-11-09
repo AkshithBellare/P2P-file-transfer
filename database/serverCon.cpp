@@ -124,6 +124,18 @@ void ServerConnection::openPubConnection(){
 
             puts("Welcome message sent successfully");
 
+            //adding only for initial connection
+            char* buffer = "Enter your unique key\n";
+            char* key = " ";
+            send(new_sock,buffer,sizeof(buffer),0);
+            int key_size = recv(new_sock,key,sizeof(key),0);
+            database->addPublisher(inet_ntoa(address.sin_addr),key);
+
+            if(key_size == 6){
+                puts("Key received\n");
+                cout<<key;
+            }
+
             //add new socket to array of sockets
             for( int i=0; i < 10; i++ ){
                 //if position is free
@@ -154,11 +166,7 @@ void ServerConnection::openPubConnection(){
                 }  
                 else{
                     //Publisher operations begin
-                    char* buffer = "Enter your unique key\n";
-                    char* key = " ";
-                    send(sd,buffer,sizeof(buffer),0);
-                    recv(sd,key,sizeof(key),0);
-                    database->addPublisher(inet_ntoa(address.sin_addr),key);
+                    
                 }
             }
         }
