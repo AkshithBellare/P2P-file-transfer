@@ -21,17 +21,13 @@ using namespace std;
 Database *database = new Database();
 
 class ServerConnection{
-    //int pub_master_sock, sub_master_sock;
 
 	public:
 		void openPubConnection();
         void openSubConnection();
 		void sendCategory();
 		void sendKey();
-        void* pubHelper(void* arg);
 };
-
-//void* 
 
 void ServerConnection::openPubConnection(){
     int opt = TRUE;
@@ -119,7 +115,7 @@ void ServerConnection::openPubConnection(){
             }
 
             //inform user of socket number
-            cout<<"New connection, socket fd is "<< new_sock <<", IP address : "<< inet_ntoa(address.sin_addr) <<", Port : "<< ntohs(address.sin_port)<<endl;
+            cout<<"New publisher connection, socket fd is "<< new_sock <<", IP address : "<< inet_ntoa(address.sin_addr) <<", Port : "<< ntohs(address.sin_port)<<endl;
             
             //send welcome message
             if( send(new_sock, hello, strlen(hello), 0) != strlen(hello) ){
@@ -127,6 +123,18 @@ void ServerConnection::openPubConnection(){
             }
 
             puts("Welcome message sent successfully");
+
+            //adding only for initial connection
+            char* buffer = "Enter your unique key\n";
+            char* key = " ";
+            send(new_sock,buffer,sizeof(buffer),0);
+            int key_size = recv(new_sock,key,sizeof(key),0);
+            database->addPublisher(inet_ntoa(address.sin_addr),key);
+
+            if(key_size == 6){
+                puts("Key received\n");
+                cout<<key;
+            }
 
             //add new socket to array of sockets
             for( int i=0; i < 10; i++ ){
@@ -158,11 +166,7 @@ void ServerConnection::openPubConnection(){
                 }  
                 else{
                     //Publisher operations begin
-                    char* buffer = "Enter your unique key\n";
-                    char* key = " ";
-                    send(sd,buffer,sizeof(buffer),0);
-                    recv(sd,key,sizeof(key),0);
-                    database->addPublisher(inet_ntoa(address.sin_addr),key);
+                    
                 }
             }
         }
@@ -177,7 +181,7 @@ void ServerConnection::openSubConnection(){
     int addrlen, max_sd, sd, new_sock, activity, rcvd_bytes; 
     int client_socket[10];  //list of sockets  
     fd_set readfds;
-    char hello[] = "Welcome to the server! subscriber\n";
+    char hello[] = "Welcome to the server subscriber! \n";
     char buffer[1024];
 
     //initialise all client_socket[] to 0 so not checked  
@@ -262,7 +266,7 @@ void ServerConnection::openSubConnection(){
             }
 
             //inform user of socket number
-            cout<<"New connection, socket fd is "<< new_sock <<", IP address : "<< inet_ntoa(address.sin_addr) <<", Port : "<< ntohs(address.sin_port)<<endl;
+            cout<<"New subscriber connection, socket fd is "<< new_sock <<", IP address : "<< inet_ntoa(address.sin_addr) <<", Port : "<< ntohs(address.sin_port)<<endl;
             
             //send welcome message
             if( send(new_sock, hello, sizeof(hello), 0) < 0 ){
@@ -325,20 +329,23 @@ void ServerConnection::sendKey(){
 int main(int argc, char **argv){
 
     ServerConnection *server = new ServerConnection();
-    database->displayContents("Database");
+   // database->displayContents("Database");
+
+    //forking to create two processes
     pid_t pid = fork();
 
     if( pid == 0 ){
-        cout<<"running from child, subscriber connections\n";
+
+        //for subscriber connections
+        cout<<"Listening for subscribers\n";
         server->openSubConnection();
     }else if( pid > 0 ){
-        cout<<"running from parent, publisher connection\n";
+
+        //for publisher connections
+        cout<<"Listening for publishers\n";
         server->openPubConnection();
     }else{
         cout<<"fork failed\n";
-    }
-
-    //server->openPubConnection();
-    
+    }    
 
 }
