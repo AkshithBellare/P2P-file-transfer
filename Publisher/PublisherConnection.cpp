@@ -94,29 +94,34 @@ void PublisherConnection::connectToServer()
 	{
 		error("ERROR connecting");
 	}
-	cout << "Connected to server";
+	cout << "Connected to server"<<endl;
 	//read(ALCSockFd,buffer,sizeof(buffer));
 	//sending key to server
-	recv(ALCSockFd, buffer, 33, 0);
+	recv(ALCSockFd, buffer, 6, 0);
 	cout<<buffer<<endl;
 	write(ALCSockFd,KEY.c_str(),sizeof(KEY));
 
 	//loop to send category and file
 	int ch;
 	do{
-		cout<<"Do you want to see the list of categories(1) or send new file(any number)  0 for exit?"<<endl;
+		cout<<"Do you want to see the list of categories(1) or send new file(2)  0 for exit?"<<endl;
 		cin>>ch;
-		switch (ch)
+		switch(ch)
 		{
-		case 1:
+		case 1:{
+			send(ALCSockFd, "1", 2, 0);
+			cout<<"Displaying list"<<endl;
 			serverShowsList();
 			break;
-		
-		case 2:
+		}
+		case 2:{
+			send(ALCSockFd, "2", 2, 0);
+			cout<<"Enter the category fromm switch"<<endl;
 			sendCategoryAndFile();
 			break;
-
+		}
 		case 0:{
+			cout<<"Closing socket and exiting"<<endl;
 			close(ALCSockFd);
 			exit(0);
 			break;
@@ -126,6 +131,41 @@ void PublisherConnection::connectToServer()
 			break;
 		}
 	}while(ch!=0);
+	// while(1)serverShowsList();
+}
+
+void PublisherConnection::serverShowsList()
+{
+	
+	bzero(buffer, 256);
+	if ( read(ALCSockFd, buffer, 256 ) < 0){
+		error("ERROR reading from socket\n");
+		exit(0);
+	}
+	cout<<buffer<<endl;
+	//prompt to enter category and file
+	//sendCategoryAndFile();
+}
+void PublisherConnection::sendCategoryAndFile()
+{
+	
+	string category, fileName;
+	int n;
+	cout << "Enter Category\n";
+	cin >> category;
+	cout << "Enter File name\n";
+	cin >> fileName;
+
+	string buf = category + ":" + fileName;
+
+	// char temp_buf[1024];
+	// recv(ALCSockFd, temp_buf, sizeof(temp_buf), 0);
+	// cout<<"temporary buffer contents "<<endl;
+	n = write(ALCSockFd, buf.c_str(), buf.length()); //Hardcoded length
+	if (n < 0)
+		error("Error writing to socket\n");
+	bzero(buffer, sizeof(buffer));
+	recv(ALCSockFd, buffer, sizeof(buffer), 0);
 }
 void PublisherConnection::listenForSubscriber()
 {
@@ -162,33 +202,6 @@ void PublisherConnection::listenForSubscriber()
 		cout << "Connected to Subscriber\n";
 	askForFile();
 }
-void PublisherConnection::serverShowsList()
-{
-	bzero(buffer, 256);
-	if ( read(ALCSockFd, buffer, 5) < 0)
-		error("ERROR reading from socket\n");
-	else
-		cout<<buffer<<endl;
-	//prompt to enter category and file
-	sendCategoryAndFile();
-}
-void PublisherConnection::sendCategoryAndFile()
-{
-	string category, fileName;
-	int n;
-	cout << "Enter Category\n";
-	cin >> category;
-	cout << "Enter File name\n";
-	cin >> fileName;
-
-	string buf = category + ":" + fileName;
-
-	n = write(ALCSockFd, buf.c_str(), 255); //Hardcoded length
-	if (n < 0)
-		error("Error writing to socket\n");
-	bzero(buffer, sizeof(buffer));
-	recv(ALCSockFd, buffer, sizeof(buffer), 0);
-}
 void PublisherConnection::askForFile()
 {
 	char buff[1024];
@@ -211,7 +224,7 @@ void PublisherConnection::askForFile()
 		//receving file name
 		bzero(buff, sizeof(buff));
 		read(ALSNewSockFd, buff, sizeof(buff));
-		cout << "Publisher asked for: " << buff<<"\n";
+		cout << "Publisher asked for: " << buff<<endl;
 		sendFileToSub(buff);
 		//printf("From Subscriber : %s", buff);
 		//}

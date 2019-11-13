@@ -14,7 +14,7 @@
 
 using namespace std;
 
-#define SERV_PORT 6000
+#define SERV_PORT 8000
 #define SUB_PUB_PORT 7000
 
 string Publisher_IP;
@@ -126,7 +126,7 @@ void SubscriberConnection::connectToServer(char* argv){
         error("ERROR connecting");
         exit(-1);
     }
-    cout <<"Connected to server";
+    cout <<"Connected to server"<<endl;
     bzero(buffer, sizeof(buffer));
     recv(SubscriberSockfd, buffer, 6, 0);
     //ReceiveMessageFromServer();
@@ -140,14 +140,23 @@ void SubscriberConnection::connectToServer(char* argv){
      **/
     int ch;
 	do{
+        cin.clear(); cin.sync();
+        
 		cout<<"Do you want to see the list of categories(1) or request file(2)  0 for exit?"<<endl;
-		cin>>ch;
+        cin>>ch;
+        cout<<ch<<endl;
+        
 		switch(ch)
 		{
 		case 1:{
 			send(SubscriberSockfd, "1", 2, 0);
 			cout<<"Displaying list"<<endl;
-            ReceiveMessageFromServer();
+            bzero(buffer, 256);
+            if ( read(SubscriberSockfd, buffer, 256 ) < 0){
+                error("ERROR reading from socket\n");
+                exit(0);
+            }
+            cout<<buffer<<endl;
 			break;
 		}
 		case 2:{
@@ -186,6 +195,7 @@ void SubscriberConnection::connectToServer(char* argv){
 			cout<<"Invalid choice!"<<endl;
 			break;
 		}
+        
 	}while(ch!=0);
 }
 
@@ -241,7 +251,7 @@ int main(int argc, char** argv){
     
     
     if( pid == 0 ){
-        cout << "opening a child";
+        cout << "opening a child"<<endl;
         subscriber->connectToServer("127.0.0.1");
        // key=3;
 
