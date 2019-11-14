@@ -173,7 +173,7 @@ void PublisherConnection::askForFile()
 	int n, i;
 
 	//asks to enter key
-	string message="Please enter the key\n";
+	string message="Please enter the key";
 	write(ALSNewSockFd,message.c_str(),sizeof(message));
 	cout<<"Asked For key\n";
 	
