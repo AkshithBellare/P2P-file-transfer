@@ -13,7 +13,7 @@
 #define SERV_PORT 5000
 #define PORT_PUB_SUB 7000
 
-#define SERV_IP "127.0.0.1"
+#define SERV_IP "192.168.43.250"
 std::string KEY="123456";
 
 using namespace std;
@@ -41,7 +41,7 @@ public:
 		exit(0);
 	}
 };
-static long key = 123456;
+//static long key = 123456;
 string PublisherConnection::receive(int socket)
 {
 	char buffer[1024];
