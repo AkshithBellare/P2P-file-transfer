@@ -126,7 +126,7 @@ void ServerConnection::openPubConnection(){
                 else{
                     cout<<"Readable socket "<<endl;
                     close_conn = FALSE;
-                
+                        //recieving choice
                         bzero(buffer, sizeof(buffer));
                         rc = recv(i, buffer, sizeof(buffer), 0);
                         if( rc<0 ){
@@ -169,12 +169,13 @@ void ServerConnection::openPubConnection(){
 
                                     int pos = cat_file.find(":");
 
-                                    category = cat_file.substr(0, pos-1);
-                                    file = cat_file.substr(pos+1, recv_file_size-1);
-
+                                    category = cat_file.substr(0, pos);
+                                    file = cat_file.substr(pos+1, recv_file_size);
+                                    cout<<"category : "<<category<<endl;
+                                    cout<<"File : "<<file<<endl;
                                     database->addFile(i, category, file);
                                     database->addToQueue(category);
-                                    
+                                    cout<<"added recieved fikes into database"<<endl;
 
                                     send(i, "Added file", 11, 0);
                             }
@@ -416,15 +417,15 @@ int main(int argc, char **argv){
     ServerConnection *server = new ServerConnection();
 
     //forking
-    /*pid_t pid = fork();
+    pid_t pid = fork();
 
     if( pid == 0){
         cout<<"running from child, publisher connections\n";
         server->openPubConnection();
-    }else if( pid > 0 ){*/
+    }else if( pid > 0 ){
         cout<<"running from parent, subscriber connection\n";
         server->openSubConnection();
-    /*}else{
+    }else{
         cout<<"fork failed\n";
-    }*/
+    }
 }
