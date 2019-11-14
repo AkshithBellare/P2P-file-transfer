@@ -98,12 +98,6 @@ void SubscriberConnection::ReceiveMessageFromPublisher()
     ReceiveFileFromPublisher();
 }
 
-long SubscriberConnection::receiveKeyAndIP()
-{
-    char *buffer;
-    int n = recv(SubscriberSockfd, buffer, sizeof(buffer), 0);
-    key = (long)buffer;
-}
 /*
 void SubscriberConnection::SendMessageToPublisher(char *message)
 { //To send messages to the Pubisher
@@ -122,11 +116,9 @@ void SubscriberConnection::ReceiveFileFromPublisher()
     
     bzero(buff, sizeof(buff));
     n=0;
-    while ((buff[n++] = getchar()) != '\n')
-            ;
+    while ((buff[n++] = getchar()) != '\n');
 
     write(SubToPubSockfd, buff, sizeof(buff));
-
 
     //receiving verification
     bzero(buff, sizeof(buff));
@@ -137,12 +129,11 @@ void SubscriberConnection::ReceiveFileFromPublisher()
         cout << "Enter name of file required\n";
         bzero(buff, sizeof(buff));
         n = 0;
-        while ((buff[n++] = getchar()) != '\n')
-            ;
+        while ((buff[n++] = getchar()) != '\n');
         write(SubToPubSockfd, buff, sizeof(buff));
         cout<<"File request sent \n";
         int ch = 0;
-
+        buff[n-1] = '\0';
         char buffer[256] = {0};
         FILE *fp;
         fp = fopen(buff, "a");

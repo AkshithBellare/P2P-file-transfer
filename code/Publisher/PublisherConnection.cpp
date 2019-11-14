@@ -14,7 +14,7 @@
 #define PORT_PUB_SUB 7000
 
 #define SERV_IP "127.0.0.1"
-string KEY="123456\n";
+std::string KEY="123456\n";
 
 using namespace std;
 
@@ -164,7 +164,7 @@ void PublisherConnection::askForFile()
 	int n, i;
 
 	//asks to enter key
-	string message="Please enter the key\n";
+	string message="Please enter the key";
 	write(ALSNewSockFd,message.c_str(),sizeof(message));
 	cout<<"Asked For key\n";
 	
