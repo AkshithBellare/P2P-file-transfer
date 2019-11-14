@@ -132,32 +132,32 @@ void SubscriberConnection::connectToServer(char* argv){
     cout<<"Enter your name:"<<endl;
     cin>>subName;
     write(SubscriberSockfd,subName.c_str(),subName.length());
-    bzero(buffer, sizeof(buffer));
-    recv(SubscriberSockfd, buffer, 6, 0);
-    //ReceiveMessageFromServer();
- 
-    //ReceiveKeyFromServer();
-    /**int received_bytes = recv(SubscriberSockfd, buffer, sizeof(buffer), 0);
-     if(received_bytes < 0){
-     cout << "error receiving files\n\n";
-     }
-     cout << "%s" << buffer;
-     **/
+    cout<<"Sent name"<<endl;
+    //bzero(buffer, sizeof(buffer));
+
     int ch;
 	do{
-        cin.clear(); cin.sync();
-        
+        //cin.clear(); cin.sync();
+        send(SubscriberSockfd, "TEST", 5, 0);
+        bzero(buffer, sizeof(buffer));
+        cout<<"Receiving new notifs"<<endl;
+        bzero(buffer, sizeof(buffer));
+        if ( recv(SubscriberSockfd, buffer, sizeof(buffer), 0 ) < 0){
+                 error("ERROR reading from socket\n");
+                 exit(0);
+        }
+       // cout<<buffer<<endl;
 		cout<<"Do you want to see the list of categories(1) or request file(2)  or subscribe(3) 0 for exit?"<<endl;
         cin>>ch;
-        cout<<ch<<endl;
+        cout<<"choice " <<ch<<endl;
         
 		switch(ch)
 		{
 		case 1:{
 			send(SubscriberSockfd, "1", 2, 0);
 			cout<<"Displaying list"<<endl;
-            bzero(buffer, 256);
-            if ( read(SubscriberSockfd, buffer, 256 ) < 0){
+            bzero(buffer, sizeof(buffer));
+            if ( read(SubscriberSockfd, buffer, sizeof(buffer) ) < 0){
                 error("ERROR reading from socket\n");
                 exit(0);
             }
@@ -170,13 +170,16 @@ void SubscriberConnection::connectToServer(char* argv){
 			cout<<"Enter the category fromm switch"<<endl;
             cin>>category;
             send(SubscriberSockfd, category.c_str(), category.length(), 0);
+            bzero(buffer, sizeof(buffer));
+            //recv file
             if( recv(SubscriberSockfd, buffer, sizeof(buffer), 0) > 0 ){
                 filename = buffer;
                 cout<<"Filename:"<<filename<<endl;
                 send(SubscriberSockfd, filename.c_str(), filename.length(), 0);
                 int recv_file_size;
+                bzero(buffer,sizeof(buffer));
                 if( recv_file_size = recv(SubscriberSockfd, buffer, sizeof(buffer), 0) > 0 ){
-                    cout<<"Recieved IP:key "<<buffer;
+                    cout<<"Recieved IP:key "<<buffer<<endl;
                     string IP_KEY = buffer;
                     int pos = IP_KEY.find(":");
                     Publisher_IP = IP_KEY.substr(0, pos-1);
@@ -189,17 +192,18 @@ void SubscriberConnection::connectToServer(char* argv){
 		}
         case 3:{
             string category;
-            send(SubscriberSockfd, "1", 2, 0);
+            send(SubscriberSockfd, "3", 2, 0);
 			cout<<"Displaying list"<<endl;
-            bzero(buffer, 256);
-            if ( read(SubscriberSockfd, buffer, 256 ) < 0){
+            bzero(buffer, sizeof(buffer));
+            //recv categories to subscribe
+            if ( read(SubscriberSockfd, buffer, sizeof(buffer) ) < 0){
                 error("ERROR reading from socket\n");
                 exit(0);
             }
             cout<<buffer<<endl;
             cout<<"Enter the category you want to subscribe to:"<<endl;
             cin>>category;
-            send(SubscriberSockfd, category.c_str(), category.length(), 0);
+            write(SubscriberSockfd, category.c_str(), category.length());
 
 			break;
         }
@@ -213,12 +217,13 @@ void SubscriberConnection::connectToServer(char* argv){
 			cout<<"Invalid choice!"<<endl;
 			break;
 		}
-        bzero(buffer, 256);
-        if ( read(SubscriberSockfd, buffer, 256 ) < 0){
-                error("ERROR reading from socket\n");
-                exit(0);
-        }
-        cout<<buffer<<endl;	
+        //bzero(buffer, 256);
+        // if ( read(SubscriberSockfd, buffer, sizeof(buffer) ) < 0){
+        //          error("ERROR reading from socket\n");
+        //          exit(0);
+        // }
+        // 
+        //cout<<buffer<<endl;	
     }while(ch!=0);
 }
 

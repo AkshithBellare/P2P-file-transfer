@@ -252,7 +252,6 @@ void ServerConnection::openSubConnection(){
     do{
         memcpy(&working_set, &master_set, sizeof(working_set));
 
-        //cout<<"Select started"<<endl;
         rc = select(max_sd+1, &working_set, NULL, NULL, NULL);
         if( rc < 0 ){
             perror("select");
@@ -284,13 +283,13 @@ void ServerConnection::openSubConnection(){
                             break;
                         }
                         cout<<"New incoming connection subscriber"<<inet_ntoa(cliaddr.sin_addr)<<endl;
-                        char *subName;
-                        read(new_sd,subName,256);
-                        send(new_sd, "Hello", 6, 0);
-
-                        //mapSub[i]=subName;
-                        cout<<subName<<endl;
-                        
+                        string subName;
+                        bzero(buffer, sizeof(buffer));
+                        if( read(new_sd, buffer, 256) > 0 ){
+                                cout<<"Received name"<<endl;
+                                subName = buffer;
+                                mapSub[new_sd]=subName;
+                        }
 
                         FD_SET(new_sd, &master_set);
                         if(new_sd>max_sd)
@@ -300,18 +299,29 @@ void ServerConnection::openSubConnection(){
 
                 else{
                     cout<<"Readable socket "<<endl;
+                    bzero(buffer, sizeof(buffer));
+                    recv(i, buffer, sizeof(buffer), 0);
                     close_conn = FALSE;
-                    //vector<string>queue=database->getUserNames();
-                    //if(queue.size()!=0){
-                    if(database->checkIfPresent(mapSub[i]));{
-                        string notify="Notification";
-                        write(i,notify.c_str(),notify.length);
-                        string condition="user_name=\""+mapSub[i]+"\"";
-                        database->deleteFromTable("queue",condition );
-                    }
-                    //}
+                    string notify;
+                    //if(mapSub[i]!="\0"){
+                        if(database->checkIfPresent(mapSub[i])){
+                            notify="Notification";
+                            cout<<notify<<endl;
+                            //write(i,notify.c_str(),notify.length());
+                            send(i, notify.c_str(), notify.length(), 0);
+                            //string condition="user_name='"+mapSub[i]+"';";
+                            //database->deleteFromTable("queue",condition );
+                        }
+                        else 
+                        {
+                            notify="No Notification";
+                            write(i,notify.c_str(),notify.length());
+                        }
+                        
+                //}
                   
                         bzero(buffer, sizeof(buffer));
+                        //recv choice
                         rc = recv(i, buffer, sizeof(buffer), 0);
                         if( rc<0 ){
                             if (errno!=EWOULDBLOCK){
@@ -331,8 +341,8 @@ void ServerConnection::openSubConnection(){
                         }       
 
                         len = rc;
-                        //cout<<rc<<" bytes received"<<"From "<<mapSub[i]<<endl;
-                        cout<<buffer<<endl;
+                        cout<<rc<<" bytes received from "<<mapSub[i]<<endl;
+                        //cout<<buffer<<endl;
 
                         if(strcmp(buffer,"1") == 0 ){
                             cout<<"Sending file deets"<<endl;
@@ -345,6 +355,7 @@ void ServerConnection::openSubConnection(){
                         }else if(strcmp(buffer, "2") == 0){
                             int recv_file_size;
                             //recv category
+                            bzero(buffer, sizeof(buffer));
                             if( (recv_file_size = recv(i, buffer, sizeof(buffer), 0)) > 0 ){
                                 cout<<"Received request"<<endl;
                                 cout<<buffer<<endl;
@@ -366,19 +377,21 @@ void ServerConnection::openSubConnection(){
                             }
                         }
                         else if(strcmp(buffer, "3") == 0){
-                            int recv_file_size;
                             cout<<"Sending file deets"<<endl;
                             string CAT_LIST = database->getCategoryList(); 
                             if(CAT_LIST.length() > 0)
                                 send(i, CAT_LIST.c_str(), CAT_LIST.length(), 0);
                             else
                                 send(i, "EMPTY", 6, 0); 
-                            if( (recv_file_size = recv(i, buffer, sizeof(buffer), 0)) > 0 ){
+                                
+                                //recv category subscription request
+                                bzero(buffer, sizeof(buffer));
+                                read(i, buffer, sizeof(buffer));
                                 cout<<"Received subscription request"<<endl;
                                 cout<<buffer<<endl;
                                 string category = buffer; 
-                                database->addSubscriber(inet_ntoa(cliaddr.sin_addr),mapSub[i]);
-                            }
+                                database->addSubscriber(mapSub[i],category);
+                            
 
                         }
                         if (close_conn)
@@ -403,15 +416,15 @@ int main(int argc, char **argv){
     ServerConnection *server = new ServerConnection();
 
     //forking
-    pid_t pid = fork();
+    /*pid_t pid = fork();
 
     if( pid == 0){
         cout<<"running from child, publisher connections\n";
         server->openPubConnection();
-    }else if( pid > 0 ){
+    }else if( pid > 0 ){*/
         cout<<"running from parent, subscriber connection\n";
         server->openSubConnection();
-    }else{
+    /*}else{
         cout<<"fork failed\n";
-    }
+    }*/
 }

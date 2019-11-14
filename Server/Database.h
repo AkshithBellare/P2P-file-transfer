@@ -137,15 +137,14 @@ void Database::deleteFromTable(string tableName, string condition)
 void Database::addToQueue(string category){
     vector<string> subscribers=getSubscribersList(category);
     for(int i=0;i<subscribers.size();i++){
-        string sqlCommand("insert into queue(user_name) values("+subscribers[i]+");");
+        string sqlCommand("insert into queue(user_name) values('"+subscribers[i]+"');");
         insertIntoTable(sqlCommand);
     }
 }
 bool Database::checkIfPresent(string user){
-    string sql("select user_name from queue where user_name="+user+";");
-    string sql("select distinct category from files;");
+    string sql("select user_name from queue where user_name='"+user+"';");
     Records records = getContents(sql);
-    if(records.size==0)
+    if(records.size()==0)
         return false;
     else
         return true;    
@@ -180,9 +179,9 @@ void Database::addFile(int pubNo, string category, string file)
     cout<<"adding file"<<endl;
     insertIntoTable(sql);
 }
-void Database::addSubscriber(string IP, string userName)
+void Database::addSubscriber(string userName, string category)
 {
-    string sql("insert into subscriber_details(ip_address,user_name) values('" + IP + "' ,'" + userName + "');");
+    string sql("insert into subscribers(category,user_name) values('" + category + "' ,'" + userName + "');");
     insertIntoTable(sql);
 }
 string Database::getCategoryList()

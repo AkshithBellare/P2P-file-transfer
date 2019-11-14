@@ -18,5 +18,21 @@ int main(){
 
     //cout<<obj->getFilenames("Game");
     //cout<<obj->getIP("Game", "2K");
-    obj->getSubscribersList("Music");
+    //obj->getSubscribersList("Music");
+    //obj->addToQueue("Music");
+    /*vector<string> v=obj->getUserNames();
+    for(int i=0;i<v.size();i++)
+        cout<<v[i]<<"\n";*/
+    //cout<<obj->checkIfPresent("Akshith");
+    /*string var="Akshith";
+                            string condition="user_name='"+var+"';";
+    obj->deleteFromTable("queue",condition );*/
+    /*string var="Akshith";
+    string category = "Music"; 
+    obj->addSubscriber("Shash","Music");*/
+    obj->addSubscriber("Shash","Books");
+    vector<string> v=obj->getSubscribersList("Books");
+    for (int i=0;i<v.size();i++)
+        cout<<v[i]<<"\n";
+
 }
