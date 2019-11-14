@@ -13,7 +13,7 @@
 #define SERV_PORT 5000
 #define PORT_PUB_SUB 7000
 
-#define SERV_IP "127.0.0.1"
+#define SERV_IP "192.168.43.250"
 std::string KEY="123456";
 
 using namespace std;
@@ -41,7 +41,7 @@ public:
 		exit(0);
 	}
 };
-static long key = 123456;
+//static long key = 123456;
 string PublisherConnection::receive(int socket)
 {
 	char buffer[1024];
@@ -133,97 +133,6 @@ void PublisherConnection::sendCategoryAndFile()
 	bzero(buffer, sizeof(buffer));
 	recv(ALCSockFd, buffer, sizeof(buffer), 0);
 }
-void PublisherConnection::listenForSubscriber()
-{
-	ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (ALSSockFd < 0)
-		error("ERROR opening socket\n");
-	else
-		printf("Socket successfully created..\n");
-	bzero((char *)&ALSServAddr, sizeof(ALSServAddr));
-	ALSServAddr.sin_family = AF_INET;
-	ALSServAddr.sin_addr.s_addr = INADDR_ANY;
-	ALSServAddr.sin_port = htons(PORT_PUB_SUB);
-	if (bind(ALSSockFd, (struct sockaddr *)&ALSServAddr, sizeof(ALSServAddr)) < 0)
-	{
-		error("ERROR on binding\n");
-	}
-	else
-		printf("Socket successfully binded..\n");
-	if ((listen(ALSSockFd, 5)) != 0)
-	{
-		printf("Listen failed...\n");
-		exit(0);
-	}
-	else
-		printf("Publisher listening..\n");
-	SubLen = sizeof(Sub_Addr);
-	ALSNewSockFd = accept(ALSSockFd, (struct sockaddr *)&Sub_Addr, &SubLen);
-	if (ALSNewSockFd < 0)
-	{
-		error("ERROR on accept\n");
-	}
-	else
-		cout << "Connected to Subscriber\n";
-	askForFile();
-}
-void PublisherConnection::askForFile()
-{
-	char buff[1024];
-	int n, i;
-
-	//asks to enter key
-	string message="Please enter the key\n";
-	write(ALSNewSockFd,message.c_str(),sizeof(message));
-	cout<<"Asked For key\n";
-	
-	//receives key;
-	bzero(buff, sizeof(buff));
-	read(ALSNewSockFd, buff, sizeof(buff));
-	string inputKey(buff);
-	if (KEY.compare(inputKey) == 0)
-	{
-		string message = "verified";
-		write(ALSNewSockFd, message.c_str(), sizeof(buff));
-
-		//receving file name
-		bzero(buff, sizeof(buff));
-		read(ALSNewSockFd, buff, sizeof(buff));
-		cout << "Publisher asked for: " << buff<<endl;
-		sendFileToSub(buff);
-		//printf("From Subscriber : %s", buff);
-		//}
-	}
-	else{
-		string message = "Wrong key";
-		write(ALSNewSockFd, message.c_str(), sizeof(buff));
-		askForFile();
-	}
-}
-void PublisherConnection::sendFileToSub(const char *fileName)
-{
-	FILE *f;
-	int words = 0;
-	char c;
-	f = fopen("test.txt", "r");
-	while ((c = getc(f)) != EOF) //Counting No of words in the file
-	{
-		fscanf(f, "%s", buffer);
-		if (isspace(c) || c == '\t')
-			words++;
-	}
-	write(ALSNewSockFd, &words, sizeof(int));
-	rewind(f);
-	char ch;
-	while (ch != EOF)
-	{
-		fscanf(f, "%s", buffer);
-		write(ALSNewSockFd, buffer, 512);
-		ch = fgetc(f);
-	}
-	printf("The file was sent successfully\n");
-}
-
 int main(int argc, char *argv[])
 {
 	PublisherConnection *withServer = new PublisherConnection();
