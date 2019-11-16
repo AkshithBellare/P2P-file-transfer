@@ -16,11 +16,11 @@
 #define PORT_PUB_SUB 7000
 
 //#define SERV_IP "localhost"
-std::string KEY="123456";
+//std::string KEY="123456";
 
 using namespace std;
 
-//string KEY;
+string KEY;
 
 class PublisherConnection
 {
@@ -46,13 +46,13 @@ public:
 	}
 };
 
-string Key_Gen(char *SERV_IP){
-	string key = "";
-	int str_len = strlen(SERV_IP);
-	for ( int i = 0; i < 6 ; i++ ){
-		//key+=append((char)SERV_IP[i]);
-	}
-}
+// string Key_Gen(char *SERV_IP){
+// 	string key = "";
+// 	int str_len = strlen(SERV_IP);
+// 	for ( int i = 0; i < 6 ; i++ ){
+// 		key+=((char)SERV_IP[i]);
+// 	}
+// }
 
 string PublisherConnection::receive(int socket)
 {
@@ -146,12 +146,15 @@ void PublisherConnection::sendCategoryAndFile()
 	bzero(buffer, sizeof(buffer));
 	recv(ALCSockFd, buffer, sizeof(buffer), 0);
 }
+
 int main(int argc, char *argv[])
 {
 	PublisherConnection *withServer = new PublisherConnection();
 	
-	if(argc < 2){
-		cout<<"Please enter IP address"<<endl;
-	}else
+	if(argc < 3){
+		cout<<"Please enter IP address and key"<<endl;
+	}else{
 		withServer->connectToServer(argv[1]);
+		KEY = argv[2];
+	}
 }
