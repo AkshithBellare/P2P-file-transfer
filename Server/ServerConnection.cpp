@@ -8,7 +8,7 @@
 #include <sys/socket.h>  
 #include <netinet/in.h> 
 #include <sys/ioctl.h> 
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
+#include <sys/time.h>  
 #include "Database.h"
 
 using namespace std;
@@ -22,8 +22,6 @@ Database *database = new Database();
 
 class ServerConnection{
 
-    //int pub_master_sock, sub_master_sock;
-
 	public:
 		void openPubConnection();
         void openSubConnection();
@@ -32,28 +30,32 @@ class ServerConnection{
 };
 
 void ServerConnection::openPubConnection(){
+
+    //initial setup
     int    i, len, rc, on = 1;
-    int client_socket[10];
+    int    client_socket[10];
     int    listen_sd, max_sd, new_sd;
     int    desc_ready, end_server = FALSE;
     int    close_conn;
     char   buffer[80];
     struct sockaddr_in addr, cliaddr;
-    fd_set              master_set, working_set;
+    fd_set master_set, working_set;
 
-
+    //socket creation
     listen_sd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_sd < 0){
         perror("socket\n");
         exit(0);
     }
 
+    //allow port to be reused
     rc = setsockopt(listen_sd, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on));
     if (rc<0){
         perror("setsockopt fail\n");
         exit(0);
     }
 
+    //to mark it as non-blocking socket
     rc = ioctl(listen_sd, FIONBIO, (char*)&on);
     if (rc<0){
         perror("ioctl");
@@ -61,27 +63,36 @@ void ServerConnection::openPubConnection(){
     }
 
     memset(&addr, 0, sizeof(addr));
+
+    //initialization of server
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PUB_PORT);
-    addr.sin_addr.s_addr = INADDR_ANY;
+    //addr.sin_addr.s_addr = INADDR_ANY;   //only for localhost
+
+    //binding IP with port
     rc = bind(listen_sd, (struct sockaddr*)&addr, sizeof(addr));
     if(rc<0){
         perror("bind publisher");
         exit(0);
     }
 
+    //listen for connections
     rc= listen(listen_sd, 10);
     if( rc < 0 ){
         perror("listen");
         exit(0);
     }
 
+    //Socket set init
     FD_ZERO(&master_set);
     max_sd = listen_sd;
     FD_SET(listen_sd, &master_set);
 
+    //main loop
     do{
         memcpy(&working_set, &master_set, sizeof(working_set));
+
+        //get number of sockets available for ops
         rc = select(max_sd+1, &working_set, NULL, NULL, 0);
         if( rc < 0 ){
             perror("select");
@@ -94,10 +105,13 @@ void ServerConnection::openPubConnection(){
         }
 
         desc_ready = rc;
-        cout<<"sockets ready for i/o "<<desc_ready<<endl;
         for(i = 0; i<=max_sd && desc_ready>0;i++){
+
+            //only if current iterator is part of list of sockets
             if(FD_ISSET(i, &working_set)){
                 desc_ready-=1;
+
+                //if i is listening socket, accept new connections
                 if(i == listen_sd){
                     do{
                         int clilen = sizeof(cliaddr);
@@ -110,6 +124,7 @@ void ServerConnection::openPubConnection(){
                             }
                             break;
                         }
+
                         cout<<"New incoming connection publisher"<<inet_ntoa(cliaddr.sin_addr)<<endl;
                         send(new_sd, "Hello", 6, 0);
                         char key[8];
@@ -118,13 +133,15 @@ void ServerConnection::openPubConnection(){
                             cout<<"received key:"<<key<<endl;
                             database->addPublisher(inet_ntoa(cliaddr.sin_addr), key);
                         }
+
                         FD_SET(new_sd, &master_set);
                         if(new_sd>max_sd)
                             max_sd = new_sd;
                     }while(new_sd!=-1);
                 }
+
+                //otherwise i/p o/p on the socket
                 else{
-                    cout<<"Readable socket "<<endl;
                     close_conn = FALSE;
                         //recieving choice
                         bzero(buffer, sizeof(buffer));
@@ -147,9 +164,8 @@ void ServerConnection::openPubConnection(){
                         }       
 
                         len = rc;
-                        cout<<rc<<" bytes received"<<endl;
-                        cout<<buffer<<endl;
-
+                        cout<<"Choice "<<buffer<<endl;
+                        //to send the list categories
                         if(strcmp(buffer,"1") == 0 ){
                             cout<<"Sending file dets"<<endl;
                             string CAT_LIST = database->getCategoryList(); 
@@ -159,27 +175,25 @@ void ServerConnection::openPubConnection(){
                             else
                                 send(i, "EMPTY", 6, 0); 
                         }
+                        //to add file to database
                         else if(strcmp(buffer, "2") == 0){
                             int recv_file_size;
                             if( (recv_file_size = read(i, buffer, sizeof(buffer))) > 0 ){
-                                    cout<<"Received file deets"<<endl;
-                                    cout<<buffer<<endl;
-                                    string cat_file = buffer;
-                                    string category, file;
+                                cout<<"Received file deets"<<endl;
+                                cout<<buffer<<endl;
+                                string cat_file = buffer;
+                                string category, file;
 
-                                    int pos = cat_file.find(":");
-
-                                    category = cat_file.substr(0, pos);
-                                    file = cat_file.substr(pos+1, recv_file_size);
-                                    cout<<"category : "<<category<<endl;
-                                    cout<<"File : "<<file<<endl;
-                                    database->addFile(i, category, file);
-                                    database->addToQueue(category);
-                                    cout<<"added recieved fikes into database"<<endl;
-
-                                    send(i, "Added file", 11, 0);
+                                //to separate out the received category and filename
+                                int pos = cat_file.find(":");
+                                category = cat_file.substr(0, pos);
+                                file = cat_file.substr(pos+1, recv_file_size);
+                                database->addFile(i, category, file);
+                                database->addToQueue(category);
+                                send(i, "Added file", 11, 0);
                             }
                         }
+                        //closing connection and removing from list
                         if (close_conn)
                         {
                             close(i);
@@ -198,6 +212,8 @@ void ServerConnection::openPubConnection(){
 }
 
 void ServerConnection::openSubConnection(){
+
+    //init variables
     int    i, len, rc, on = 1;
     int client_sock[10];
     int    listen_sd, max_sd, new_sd;
@@ -205,7 +221,8 @@ void ServerConnection::openSubConnection(){
     int    close_conn;
     char   buffer[256];
     struct sockaddr_in addr, cliaddr;
-    fd_set              master_set, working_set;
+    fd_set master_set, working_set;
+    //for addressing a particular subscriber
     map<int,string> mapSub;
 
     for(int i=0;i<10;i++){
@@ -231,9 +248,11 @@ void ServerConnection::openSubConnection(){
     }
 
     memset(&addr, 0, sizeof(addr));
+
+    //setting up address of server
     addr.sin_family = AF_INET;
     addr.sin_port = htons(SUB_PORT);
-    //addr.sin_addr.s_addr = INADDR_ANY;
+    //addr.sin_addr.s_addr = INADDR_ANY;        //only for localhost
     rc = bind(listen_sd, (struct sockaddr*)&addr, sizeof(addr));
     if(rc<0){
         perror("bind sub failed");
@@ -250,6 +269,7 @@ void ServerConnection::openSubConnection(){
     max_sd = listen_sd;
     FD_SET(listen_sd, &master_set);
 
+    //main loop
     do{
         memcpy(&working_set, &master_set, sizeof(working_set));
 
@@ -265,7 +285,6 @@ void ServerConnection::openSubConnection(){
         }
 
         desc_ready = rc;
-        cout<<"sockets ready for i/o "<<desc_ready<<endl;
         for(i = 0; i<=max_sd && desc_ready>0;i++){
             if(FD_ISSET(i, &working_set)){
                 desc_ready-=1;
@@ -278,7 +297,7 @@ void ServerConnection::openSubConnection(){
                         if(new_sd<0){
                             if (errno != EWOULDBLOCK)
                             {
-                                perror("  accept() failed");
+                                perror(" accept() failed");
                                 end_server = TRUE;
                             }
                             break;
@@ -298,8 +317,9 @@ void ServerConnection::openSubConnection(){
                     }while(new_sd!=-1);
                 }
                 else{
-                    cout<<"Readable socket "<<endl;
                     close_conn = FALSE;
+
+                    //for checking of notification
                     string notify;
                     if(database->checkIfPresent(mapSub[i])){
                         notify="Y";
@@ -329,7 +349,9 @@ void ServerConnection::openSubConnection(){
                         FD_CLR(i, &master_set);
                         break;
                     }       
+
                     cout<<rc<<" bytes received from "<<mapSub[i]<<endl;
+                    //to send file details
                     if(strcmp(buffer,"1") == 0 ){
                         cout<<"Sending file deets"<<endl;
                         string CAT_LIST = database->getCategoryList(); 
@@ -339,7 +361,9 @@ void ServerConnection::openSubConnection(){
                         }
                         else
                             send(i, "EMPTY", 6, 0); 
-                    }else if(strcmp(buffer, "2") == 0){
+                    }
+                    //recv new file request
+                    else if(strcmp(buffer, "2") == 0){
                         int recv_file_size;
                         //recv category
                         bzero(buffer, sizeof(buffer));
@@ -356,6 +380,7 @@ void ServerConnection::openSubConnection(){
                             bzero(buffer, sizeof(buffer));
                             //recv file name and send IP, key
                             if( read(i, buffer, sizeof(buffer)) > 0){
+                                cout<<"recv file to send ip "<<buffer<<endl;
                                 string IP_KEY = database->getIP(category, buffer);
                                 cout<<IP_KEY<<endl;
                                 IP_KEY = IP_KEY +":"+database->getKey(category, buffer);
@@ -366,6 +391,8 @@ void ServerConnection::openSubConnection(){
                             }  
                         }
                     }
+
+                    //new subscription
                     else if(strcmp(buffer, "3") == 0){
                         cout<<"Sending file deets"<<endl;
                         string CAT_LIST = database->getCategoryList(); 
@@ -385,6 +412,8 @@ void ServerConnection::openSubConnection(){
                         string category = buffer; 
                         database->addSubscriber(mapSub[i],category);
                     }
+
+                    //close connection and remove from list
                     if (close_conn)
                     {
                         close(i);
@@ -406,7 +435,7 @@ int main(int argc, char **argv){
 
     ServerConnection *server = new ServerConnection();
 
-    //forking
+    //forking to create two processes
     pid_t pid = fork();
 
     if( pid == 0){

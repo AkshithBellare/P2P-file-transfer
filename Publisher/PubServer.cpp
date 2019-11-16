@@ -10,13 +10,17 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <bits/stdc++.h>
+
+//defining ports
 #define SERV_PORT 5000
 #define PORT_PUB_SUB 7000
 
-#define SERV_IP "192.168.43.250"
+//#define SERV_IP "localhost"
 std::string KEY="123456";
 
 using namespace std;
+
+//string KEY;
 
 class PublisherConnection
 {
@@ -29,7 +33,7 @@ public:
 	struct sockaddr_in ALCServAddr, Sub_Addr;
 
 	string receive(int);
-	void connectToServer(); 
+	void connectToServer(char *SERV_IP); 
 	void listenForSubscriber(); 
 	void serverShowsList();
 	void sendCategoryAndFile();
@@ -41,7 +45,15 @@ public:
 		exit(0);
 	}
 };
-//static long key = 123456;
+
+string Key_Gen(char *SERV_IP){
+	string key = "";
+	int str_len = strlen(SERV_IP);
+	for ( int i = 0; i < 6 ; i++ ){
+		//key+=append((char)SERV_IP[i]);
+	}
+}
+
 string PublisherConnection::receive(int socket)
 {
 	char buffer[1024];
@@ -56,7 +68,7 @@ string PublisherConnection::receive(int socket)
 
 	return receivedData;
 }
-void PublisherConnection::connectToServer()
+void PublisherConnection::connectToServer(char *SERV_IP)
 {
 	//only runs for first time connection and only then
 	ALCSockFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -66,7 +78,7 @@ void PublisherConnection::connectToServer()
 	}
 	bzero(&ALCServAddr, sizeof(ALCServAddr));
 	ALCServAddr.sin_family = AF_INET;
-	ALCServAddr.sin_addr.s_addr = INADDR_ANY;
+	//ALCServAddr.sin_addr.s_addr = INADDR_ANY;
 	ALCServAddr.sin_port = htons(SERV_PORT);
 	inet_pton(AF_INET, SERV_IP, &ALCServAddr.sin_addr);
 	if (connect(ALCSockFd, (struct sockaddr *)&ALCServAddr, sizeof(ALCServAddr)) < 0)
@@ -112,12 +124,13 @@ void PublisherConnection::serverShowsList()
 {
 	
 	bzero(buffer, 256);
-	if ( read(ALCSockFd, buffer, 256 ) < 0){
+	if ( read(ALCSockFd, buffer, 256 ) < 0 ){
 		error("ERROR reading from socket\n");
 		exit(0);
 	}
 	cout<<buffer<<endl;
 }
+
 void PublisherConnection::sendCategoryAndFile()
 {
 	string category, fileName;
@@ -127,7 +140,7 @@ void PublisherConnection::sendCategoryAndFile()
 	cout << "Enter File name\n";
 	cin >> fileName;
 	string buf = category + ":" + fileName;
-	n = write(ALCSockFd, buf.c_str(), buf.length()); //Hardcoded length
+	n = write(ALCSockFd, buf.c_str(), buf.length()); 
 	if (n < 0)
 		error("Error writing to socket\n");
 	bzero(buffer, sizeof(buffer));
@@ -136,5 +149,9 @@ void PublisherConnection::sendCategoryAndFile()
 int main(int argc, char *argv[])
 {
 	PublisherConnection *withServer = new PublisherConnection();
-	withServer->connectToServer();
+	
+	if(argc < 2){
+		cout<<"Please enter IP address"<<endl;
+	}else
+		withServer->connectToServer(argv[1]);
 }

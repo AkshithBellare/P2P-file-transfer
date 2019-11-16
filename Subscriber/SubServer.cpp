@@ -14,6 +14,7 @@
 
 using namespace std;
 
+//ports setting
 #define SERV_PORT 8000
 #define SUB_PUB_PORT 7000
 
@@ -39,17 +40,12 @@ public:
     void setPublisherIP(char* PublisherIP);
     char* getPublisherIP();
     
-    //publisher side functions
-    void connectToPublisher(char* Pub_IP);
-    void ReceiveFileFromPublisher();
-    void ReceiveMessageFromPublisher();
-    void SendMessageToPublisher(char* message);
     void error(const char *msg){
         perror(msg);
         exit(0);
     }
 };
-void SubscriberConnection::connectToServer(char* argv){
+void SubscriberConnection::connectToServer(char* SERV_IP){
     
     SubscriberSockfd = socket(AF_INET,SOCK_STREAM,0);
     if(SubscriberSockfd < 0) {
@@ -57,11 +53,13 @@ void SubscriberConnection::connectToServer(char* argv){
     }
     
     bzero(&server_address,sizeof(server_address));
+
+    //init server address values
     server_address.sin_family=AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
+    //server_address.sin_addr.s_addr = INADDR_ANY;      //only for localhost
     server_address.sin_port=htons(SERV_PORT);
     
-    inet_pton(AF_INET,argv,&server_address.sin_addr);
+    inet_pton(AF_INET,SERV_IP,&server_address.sin_addr);
     
     if (connect(SubscriberSockfd,(struct sockaddr*)&server_address,sizeof(server_address)) < 0) {
         error("ERROR connecting");
@@ -92,9 +90,9 @@ void SubscriberConnection::connectToServer(char* argv){
                 string modBuff=buffer;
                 modBuff=modBuff.substr(1);
                 cout<<modBuff<<endl;
-
                 break;
             }
+
             case 2:{
                 string category, filename;
                 send(SubscriberSockfd, "2", 2, 0);
@@ -128,6 +126,7 @@ void SubscriberConnection::connectToServer(char* argv){
                 break;
             
             }
+
             case 3:{
                 string category;
                 send(SubscriberSockfd, "3", 2, 0);
@@ -147,12 +146,14 @@ void SubscriberConnection::connectToServer(char* argv){
                 write(SubscriberSockfd, category.c_str(), category.length());
                 break;
             }
+
             case 0:{
                 cout<<"Closing socket and exiting"<<endl;
                 close(SubscriberSockfd);
                 exit(0);
                 break;
             }
+
             default:
                 cout<<"Invalid choice!"<<endl;
                 break;
@@ -161,5 +162,9 @@ void SubscriberConnection::connectToServer(char* argv){
 }
 int main(int argc, char** argv){
     SubscriberConnection *subscriber = new SubscriberConnection();
-     subscriber->connectToServer("127.0.0.1");
+    if(argc < 2){
+        cout<<"PLEASE ENTER IP \n"<<endl;
+    }
+    else
+        subscriber->connectToServer(argv[1]);
 }
