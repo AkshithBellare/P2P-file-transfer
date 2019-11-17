@@ -13,8 +13,7 @@
 #define SERV_PORT 5000
 #define PORT_PUB_SUB 7000
 
-#define SERV_IP "127.0.0.1"
-std::string KEY="123456\n";
+std::string KEY="123456";
 
 using namespace std;
 
@@ -37,7 +36,6 @@ public:
 		exit(0);
 	}
 };
-static long key = 123456;
 void PubSub::listenForSubscriber()
 {
 
@@ -48,7 +46,7 @@ void PubSub::listenForSubscriber()
 		printf("Socket successfully created..\n");
 	bzero((char *)&ALSServAddr, sizeof(ALSServAddr));
 	ALSServAddr.sin_family = AF_INET;
-	ALSServAddr.sin_addr.s_addr = INADDR_ANY;
+	//ALSServAddr.sin_addr.s_addr = INADDR_ANY;		//for localhost
 	ALSServAddr.sin_port = htons(PORT_PUB_SUB);
 	if (bind(ALSSockFd, (struct sockaddr *)&ALSServAddr, sizeof(ALSServAddr)) < 0)
 	{
@@ -98,8 +96,7 @@ void PubSub::askForFile()
 		read(ALSNewSockFd, buff, sizeof(buff));
 		cout << "Publisher asked for: " << buff<<"\n";
 		sendFileToSub(buff);
-		//printf("From Subscriber : %s", buff);
-		//}
+		
 	}
 	else{
 		string message = "Wrong key";
@@ -112,7 +109,7 @@ void PubSub::sendFileToSub(const char *fileName)
 	FILE *f;
 	int words = 0;
 	char c;
-	f = fopen("test.txt", "r");
+	f = fopen("received_file.txt", "r");
 	while ((c = getc(f)) != EOF) //Counting No of words in the file
 	{
 		fscanf(f, "%s", buffer);

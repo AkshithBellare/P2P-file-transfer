@@ -25,8 +25,7 @@ class ServerConnection{
 	public:
 		void openPubConnection();
         void openSubConnection();
-		void sendCategory();
-		void sendKey();
+
 };
 
 void ServerConnection::openPubConnection(){
@@ -41,7 +40,7 @@ void ServerConnection::openPubConnection(){
     map<int,string>keyMap;
     struct sockaddr_in addr, cliaddr;
     fd_set master_set, working_set;
-
+    string pubId;
     //socket creation
     listen_sd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_sd < 0){
@@ -120,20 +119,20 @@ void ServerConnection::openPubConnection(){
                         if(new_sd<0){
                             if (errno != EWOULDBLOCK)
                             {
-                                perror("  accept() failed");
+                                perror("accept() failed");
                                 end_server = TRUE;
                             }
                             break;
                         }
 
-                        cout<<"New incoming connection publisher"<<inet_ntoa(cliaddr.sin_addr)<<endl;
+                        cout<<"New incoming connection from publisher "<<inet_ntoa(cliaddr.sin_addr)<<endl;
                         send(new_sd, "Hello", 6, 0);
                         char key[7];
                         
                         if(read(new_sd, key, 7)>0){
-                            cout<<"received key:"<<key<<endl;
+                            cout<<"Received key:"<<key<<endl;
                             database->addPublisher(inet_ntoa(cliaddr.sin_addr), key);
-                            keyMap[i]=key;
+                            keyMap[new_sd]=key;
                         }
 
                         FD_SET(new_sd, &master_set);
@@ -144,8 +143,9 @@ void ServerConnection::openPubConnection(){
 
                 //otherwise i/p o/p on the socket
                 else{
-                
-                    string pubId=database->getPublisherId(keyMap[i]);
+                    cout<<keyMap[i]<<endl;
+                     pubId=database->getPublisherId(keyMap[i]);
+                     cout<<pubId<<endl;
                     close_conn = FALSE;
                         //recieving choice
                         bzero(buffer, sizeof(buffer));
@@ -161,7 +161,7 @@ void ServerConnection::openPubConnection(){
                         }
                         if(rc==0){
                             close_conn=TRUE;
-                            cout<<"conn closed"<<endl;
+                            cout<<"Connection closed from socket "<<i<<endl;
                             close(i);
                             FD_CLR(i, &master_set);
                             break;
@@ -171,7 +171,7 @@ void ServerConnection::openPubConnection(){
                         cout<<"Choice "<<buffer<<endl;
                         //to send the list categories
                         if(strcmp(buffer,"1") == 0 ){
-                            cout<<"Sending file dets"<<endl;
+                            cout<<"Sending file details"<<endl;
                             string CAT_LIST = database->getCategoryList(); 
                             cout<<CAT_LIST<<endl;
                             if(CAT_LIST.length() > 0)
@@ -183,7 +183,7 @@ void ServerConnection::openPubConnection(){
                         else if(strcmp(buffer, "2") == 0){
                             int recv_file_size;
                             if( (recv_file_size = read(i, buffer, sizeof(buffer))) > 0 ){
-                                cout<<"Received file deets"<<endl;
+                                cout<<"Received file details"<<endl;
                                 cout<<buffer<<endl;
                                 string cat_file = buffer;
                                 string category, file;
@@ -191,7 +191,7 @@ void ServerConnection::openPubConnection(){
                                 //to separate out the received category and filename
                                 int pos = cat_file.find(":");
                                 category = cat_file.substr(0, pos);
-                                file = cat_file.substr(pos+1, recv_file_size);
+                                file = cat_file.substr(pos+1);
                                 database->addFile(pubId, category, file);
                                 database->addToQueue(category);
                                 send(i, "Added file", 11, 0);
@@ -357,14 +357,14 @@ void ServerConnection::openSubConnection(){
                     cout<<rc<<" bytes received from "<<mapSub[i]<<endl;
                     //to send file details
                     if(strcmp(buffer,"1") == 0 ){
-                        cout<<"Sending file deets"<<endl;
+                        cout<<"Sending file details"<<endl;
                         string CAT_LIST = database->getCategoryList(); 
                         if(CAT_LIST.length() > 0){
                             CAT_LIST=notify+CAT_LIST;
                             send(i, CAT_LIST.c_str(), CAT_LIST.length(), 0);
                         }
                         else
-                            send(i, "EMPTY", 6, 0); 
+                            send(i, "", 1, 0); 
                     }
                     //recv new file request
                     else if(strcmp(buffer, "2") == 0){
@@ -384,11 +384,9 @@ void ServerConnection::openSubConnection(){
                             bzero(buffer, sizeof(buffer));
                             //recv file name and send IP, key
                             if( read(i, buffer, sizeof(buffer)) > 0){
-                                cout<<"recv file to send ip "<<buffer<<endl;
+                                cout<<"Received file to send ip "<<buffer<<endl;
                                 string IP_KEY = database->getIP(category, buffer);
-                                cout<<IP_KEY<<endl;
                                 IP_KEY = IP_KEY +":"+database->getKey(category, buffer);
-                                cout<<IP_KEY<<endl;
                                 if( send(i, IP_KEY.c_str(), IP_KEY.length(), 0) > 0){
                                     cout<<"Send success"<<endl;
                                 }
@@ -398,7 +396,7 @@ void ServerConnection::openSubConnection(){
 
                     //new subscription
                     else if(strcmp(buffer, "3") == 0){
-                        cout<<"Sending file deets"<<endl;
+                        cout<<"Sending file details"<<endl;
                         string CAT_LIST = database->getCategoryList(); 
                         if(CAT_LIST.length() > 0){
                             CAT_LIST=notify+CAT_LIST;
@@ -411,7 +409,7 @@ void ServerConnection::openSubConnection(){
                         //recv category subscription request
                         bzero(buffer, sizeof(buffer));
                         read(i, buffer, sizeof(buffer));
-                        cout<<"Received subscription request"<<endl;
+                        cout<<"Received subscription request for"<<endl;
                         cout<<buffer<<endl;
                         string category = buffer; 
                         database->addSubscriber(mapSub[i],category);

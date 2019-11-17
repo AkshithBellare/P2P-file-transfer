@@ -283,37 +283,3 @@ string Database::getKey(string category, string fileName)
     }
     return key;
 }
-
-/*int main(){
-    Database *obj=new Database();
-    Database *db=new Database();
-    obj->openDatabase();
-    /*string sql("CREATE TABLE publisher_details (publisher_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,ip_address TEXT NOT NULL,auth_key TEXT NOT NULL );");
-    obj->createTable(sql);
-    db->addPublisher("192.168.43.40","123",obj);
-        db->addPublisher("192.168.43.41","456",obj);
-            db->addPublisher("192.168.43.42","789",obj);
-    string sql1("CREATE TABLE files (file_no INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,publisher_id INTEGER NOT NULL ,category TEXT NOT NULL,file_name TEXT NOT NULL , FOREIGN KEY(publisher_id) REFERENCES publisher_details(publisher_id));");
-    obj->createTable(sql1);
-    db->addFile(1,"Music","TS",obj);
-     db->addFile(2,"Music","SD",obj);
-    db->addFile(1,"Books","HP",obj);
-        db->addFile(3,"Books","abc",obj);
-   
-    string sql2("CREATE TABLE subscriber_details (subscriber_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,ip_address TEXT NOT NULL,user_name TEXT NOT NULL );");
-    obj->createTable(sql2);
-    db->addSubscriber("192.168.43.41","harsh",obj);
-    db->addSubscriber("192.168.43.45","laharsh",obj);
-    db->addSubscriber("192.168.43.46","akharsh",obj);
-    obj->displayContents("subscriber_details");
-    obj->getKey
-*/
-
-//cout<<db->getCategoryList(obj);
-//string cat="Music",file="SD";
-//cout<<db->getFilenames(cat,obj);
-//cout<<db->getIP(cat,file,obj);
-
-
-
-

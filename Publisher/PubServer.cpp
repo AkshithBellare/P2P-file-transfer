@@ -15,9 +15,6 @@
 #define SERV_PORT 5000
 #define PORT_PUB_SUB 7000
 
-//#define SERV_IP "localhost"
-//std::string KEY="123456";
-
 using namespace std;
 
 string KEY;
@@ -45,14 +42,6 @@ public:
 		exit(0);
 	}
 };
-
-// string Key_Gen(char *SERV_IP){
-// 	string key = "";
-// 	int str_len = strlen(SERV_IP);
-// 	for ( int i = 0; i < 6 ; i++ ){
-// 		key+=((char)SERV_IP[i]);
-// 	}
-// }
 
 string PublisherConnection::receive(int socket)
 {

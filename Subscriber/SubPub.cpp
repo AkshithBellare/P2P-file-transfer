@@ -17,10 +17,6 @@ using namespace std;
 
 #define SERV_PORT 6000
 #define SUB_PUB_PORT 7000
-#define SERV_IP "127.0.0.1" 
-
-//char *Publisher_IP = "127.0.0.1";
-long key = 0;
 
 class SubPub
 {
@@ -153,5 +149,11 @@ void SubPub::connectToPublisher(char *Pub_IP)
 int main(int argc, char **argv)
 {
     SubPub *subscriber = new SubPub();
-    subscriber->connectToPublisher("192.168.43.250");
+    if(argc>2){
+        subscriber->connectToPublisher(argv[1]);
+    }else
+    {
+        printf("Please enter IP!");
+    }
+    
 }

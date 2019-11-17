@@ -67,7 +67,7 @@ void SubscriberConnection::connectToServer(char* SERV_IP){
     }
     string subName;
 
-    cout <<"Connected to server"<<endl;
+    cout<<"Connected to server"<<endl;
     cout<<"Enter your name:"<<endl;
     cin>>subName;
     write(SubscriberSockfd,subName.c_str(),subName.length());
@@ -106,7 +106,7 @@ void SubscriberConnection::connectToServer(char* SERV_IP){
                 string modBuff=buffer;
                 modBuff=modBuff.substr(1);
                 filename = modBuff;
-                cout<<"Files : "<<filename<<endl;
+                cout<<"Files : \n"<<filename<<endl;
                 string fName;
                 cout<<"Enter which file u want"<<endl;
                 cin>>fName;
@@ -118,9 +118,9 @@ void SubscriberConnection::connectToServer(char* SERV_IP){
                         //buffer[recv_file_size] = "\0";
                         string IP_KEY = buffer;
                         int pos = IP_KEY.find(":");
-                        Publisher_IP = IP_KEY.substr(0, pos-1);
-                        KEY = IP_KEY.substr(pos+1, recv_file_size-1);
-                        cout<<"IP : "<<Publisher_IP<<"\n key : "<<KEY<<endl;
+                        Publisher_IP = IP_KEY.substr(0, pos);
+                        KEY = IP_KEY.substr(pos+1);
+                        cout<<"IP : "<<Publisher_IP<<"\nkey : "<<KEY<<endl;
                     }
                 
                 break;
@@ -154,16 +154,17 @@ void SubscriberConnection::connectToServer(char* SERV_IP){
                 break;
             }
 
-            default:
+            default:{
                 cout<<"Invalid choice!"<<endl;
                 break;
+            }
         }
     }while(ch!=0);
 }
 int main(int argc, char** argv){
     SubscriberConnection *subscriber = new SubscriberConnection();
     if(argc < 2){
-        cout<<"PLEASE ENTER IP \n"<<endl;
+        cout<<"PLEASE ENTER IP "<<endl;
     }
     else
         subscriber->connectToServer(argv[1]);

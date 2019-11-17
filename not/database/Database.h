@@ -2,17 +2,23 @@
 #include <string>
 #include <iostream>
 #include <bits/stdc++.h>
-using Record = std::vector<std::string>;
+using Record = std::vector<std::string>; 
 using Records = std::vector<Record>;
 using namespace std;
 class Database
 {
 public:
-    const char *databaseName;
+    const char *databaseName; //name of database
     sqlite3 *DB;
 
+    Database(){
+        databaseName="PUBLISHER.db";
+        openDatabase();
+    }    
+
     void printError(string);
-    int openDatabase();
+    void openDatabase();
+
     void createTable(string);
     void displayContents(string);
     void insertIntoTable(string);
@@ -20,16 +26,22 @@ public:
     Records getContents(string);
 
     void addPublisher(string, string );
-    void addFile(int, string, string );
+    void addFile(string, string, string );
     void addSubscriber(string, string );
+    string getPublisherId(string);
 
     string getCategoryList();
     string getFilenames(string );
     string getIP(string, string);
     string getKey(string, string );
+    void addToQueue(string);
+    bool checkIfPresent(string);
+    vector<string> getUserNames();
+    vector<string> getSubscribersList(string category);
 };
 static string returningString;
-static int callback(void *data, int argc, char **argv, char **azColName)
+
+static int callback(void *data, int argc, char **argv, char **azColName) //what does this function do?
 {
     int i;
     fprintf(stderr, "%s: ", (const char *)data);
@@ -57,7 +69,7 @@ int select_callback(void *p_data, int num_fields, char **p_fields, char **p_col_
     }
     return 0;
 }
-int Database::openDatabase()
+void Database::openDatabase()
 {
     int exit = sqlite3_open(databaseName, &DB);
     if (exit)
@@ -66,7 +78,6 @@ int Database::openDatabase()
         cout << "Retrying";
         openDatabase();
     }
-    return 1;
     /*else
     {
         //cout << "Opened database successfully:\n"
@@ -124,11 +135,25 @@ void Database::deleteFromTable(string tableName, string condition)
     else
         std::cout << "Record deleted Successfully!";
 }
+void Database::addToQueue(string category){
+    vector<string> subscribers=getSubscribersList(category);
+    for(int i=0;i<subscribers.size();i++){
+        string sqlCommand("insert into queue(user_name) values('"+subscribers[i]+"');");
+        insertIntoTable(sqlCommand);
+    }
+}
+bool Database::checkIfPresent(string user){
+    string sql("select user_name from queue where user_name='"+user+"';");
+    Records records = getContents(sql);
+    if(records.size()==0)
+        return false;
+    else
+        return true;    
 
+}
 void Database::insertIntoTable(string sqlCommand)
 {
     char *messageError;
-    cout<<sqlCommand<<endl;
     int exit = sqlite3_exec(DB, sqlCommand.c_str(), NULL, 0, &messageError);
     if (exit != SQLITE_OK)
     {
@@ -137,7 +162,7 @@ void Database::insertIntoTable(string sqlCommand)
         sqlite3_free(messageError);
     }
     else
-        cout << "Records created Successfully!";
+        cout << "Records created Successfully!"<<endl;
 }
 void Database::printError(string errorMessage)
 {
@@ -147,20 +172,32 @@ void Database::printError(string errorMessage)
 void Database::addPublisher(string IP, string key)
 {
     string sql("insert into publisher_details(ip_address,auth_key) values('" + IP + "' ,'" + key + "');");
-    cout<<"Adding new publisher"<<endl;
+    cout<<sql<<"\n";
     insertIntoTable(sql);
 }
-void Database::addFile(int pubNo, string category, string file)
+void Database::addFile(string pubNo, string category, string file)
 {
-    string sql("insert into files(publisher_id,category,file_name) values(" + to_string(pubNo) + ",'" + category + "','" + file + "');");
+    string sql("insert into files(publisher_id,category,file_name) values('" + pubNo + "','" + category + "','" + file + "');");
     cout<<"adding file"<<endl;
+    cout<<sql<<"\n";
     insertIntoTable(sql);
 }
-void Database::addSubscriber(string IP, string userName)
+void Database::addSubscriber(string userName, string category)
 {
-    string sql("insert into subscriber_details(ip_address,user_name) values('" + IP + "' ,'" + userName + "');");
-    cout<<"Adding subscriber"<<endl;
+    string sql("insert into subscribers(category,user_name) values('" + category + "' ,'" + userName + "');");
     insertIntoTable(sql);
+}
+string Database::getPublisherId(string key)
+{
+    string sql("select publisher_id from publisher_details where auth_key='"+key+"';");
+    Records records = getContents(sql);
+    string id;
+    for (auto &record : records)
+    {
+        // do something with your records
+        id=record[0];
+    }
+    return id;
 }
 string Database::getCategoryList()
 {
@@ -171,6 +208,29 @@ string Database::getCategoryList()
     {
         // do something with your records
         data = data + record[0] + "\n";
+    }
+    return data;
+}
+vector<string> Database::getSubscribersList(string category)
+{
+    string sql("select distinct user_name from subscribers where category='" + category + "';");
+    Records records = getContents(sql);
+    vector<string> data ;
+    for (auto &record : records)
+    {
+        data.push_back(record[0]);
+        
+    }
+    return data;
+}
+vector<string> Database::getUserNames()
+{
+    string sql("select distinct user_name from queue;");
+    Records records = getContents(sql);
+    vector<string> data ;
+    for (auto &record : records)
+    {
+        data.push_back(record[0]);   
     }
     return data;
 }
@@ -223,37 +283,3 @@ string Database::getKey(string category, string fileName)
     }
     return key;
 }
-
-/*int main(){
-    Database *obj=new Database();
-    Database *db=new Database();
-    obj->openDatabase();
-    /*string sql("CREATE TABLE publisher_details (publisher_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,ip_address TEXT NOT NULL,auth_key TEXT NOT NULL );");
-    obj->createTable(sql);
-    db->addPublisher("192.168.43.40","123",obj);
-        db->addPublisher("192.168.43.41","456",obj);
-            db->addPublisher("192.168.43.42","789",obj);
-
-
-    string sql1("CREATE TABLE files (file_no INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,publisher_id INTEGER NOT NULL ,category TEXT NOT NULL,file_name TEXT NOT NULL , FOREIGN KEY(publisher_id) REFERENCES publisher_details(publisher_id));");
-    obj->createTable(sql1);
-    db->addFile(1,"Music","TS",obj);
-     db->addFile(2,"Music","SD",obj);
-    db->addFile(1,"Books","HP",obj);
-        db->addFile(3,"Books","abc",obj);
-
-   
-    string sql2("CREATE TABLE subscriber_details (subscriber_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,ip_address TEXT NOT NULL,user_name TEXT NOT NULL );");
-    obj->createTable(sql2);
-    db->addSubscriber("192.168.43.41","harsh",obj);
-    db->addSubscriber("192.168.43.45","laharsh",obj);
-    db->addSubscriber("192.168.43.46","akharsh",obj);
-
-    obj->displayContents("subscriber_details");
-    obj->getKey
-*/
-
-//cout<<db->getCategoryList(obj);
-//string cat="Music",file="SD";
-//cout<<db->getFilenames(cat,obj);
-//cout<<db->getIP(cat,file,obj);
