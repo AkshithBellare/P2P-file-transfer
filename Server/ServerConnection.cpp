@@ -144,6 +144,8 @@ void ServerConnection::openPubConnection(){
 
                 //otherwise i/p o/p on the socket
                 else{
+                
+                    string pubId=database->getPublisherId(keyMap[i]);
                     close_conn = FALSE;
                         //recieving choice
                         bzero(buffer, sizeof(buffer));
@@ -190,7 +192,6 @@ void ServerConnection::openPubConnection(){
                                 int pos = cat_file.find(":");
                                 category = cat_file.substr(0, pos);
                                 file = cat_file.substr(pos+1, recv_file_size);
-                                string pubId=database->getPublisherId(keyMap[i]);
                                 database->addFile(pubId, category, file);
                                 database->addToQueue(category);
                                 send(i, "Added file", 11, 0);

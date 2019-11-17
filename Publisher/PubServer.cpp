@@ -103,7 +103,6 @@ void PublisherConnection::connectToServer(char *SERV_IP)
 		}
 		case 2:{
 			send(ALCSockFd, "2", 2, 0);
-			cout<<"Enter the category"<<endl;
 			sendCategoryAndFile();
 			break;
 		}
@@ -154,7 +153,7 @@ int main(int argc, char *argv[])
 	if(argc < 3){
 		cout<<"Please enter IP address and key"<<endl;
 	}else{
-		withServer->connectToServer(argv[1]);
 		KEY = argv[2];
+		withServer->connectToServer(argv[1]);
 	}
 }
