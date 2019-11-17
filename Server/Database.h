@@ -26,8 +26,9 @@ public:
     Records getContents(string);
 
     void addPublisher(string, string );
-    void addFile(int, string, string );
+    void addFile(string, string, string );
     void addSubscriber(string, string );
+    string getPublisherId(string);
 
     string getCategoryList();
     string getFilenames(string );
@@ -171,18 +172,32 @@ void Database::printError(string errorMessage)
 void Database::addPublisher(string IP, string key)
 {
     string sql("insert into publisher_details(ip_address,auth_key) values('" + IP + "' ,'" + key + "');");
+    cout<<sql<<"\n";
     insertIntoTable(sql);
 }
-void Database::addFile(int pubNo, string category, string file)
+void Database::addFile(string pubNo, string category, string file)
 {
-    string sql("insert into files(publisher_id,category,file_name) values(" + to_string(pubNo) + ",'" + category + "','" + file + "');");
+    string sql("insert into files(publisher_id,category,file_name) values('" + pubNo + "','" + category + "','" + file + "');");
     cout<<"adding file"<<endl;
+    cout<<sql<<"\n";
     insertIntoTable(sql);
 }
 void Database::addSubscriber(string userName, string category)
 {
     string sql("insert into subscribers(category,user_name) values('" + category + "' ,'" + userName + "');");
     insertIntoTable(sql);
+}
+string Database::getPublisherId(string key)
+{
+    string sql("select publisher_id from publisher_details where auth_key='"+key+"';");
+    Records records = getContents(sql);
+    string id;
+    for (auto &record : records)
+    {
+        // do something with your records
+        id=record[0];
+    }
+    return id;
 }
 string Database::getCategoryList()
 {

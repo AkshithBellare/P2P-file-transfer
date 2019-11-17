@@ -38,6 +38,7 @@ void ServerConnection::openPubConnection(){
     int    desc_ready, end_server = FALSE;
     int    close_conn;
     char   buffer[80];
+    map<int,string>keyMap;
     struct sockaddr_in addr, cliaddr;
     fd_set master_set, working_set;
 
@@ -127,11 +128,12 @@ void ServerConnection::openPubConnection(){
 
                         cout<<"New incoming connection publisher"<<inet_ntoa(cliaddr.sin_addr)<<endl;
                         send(new_sd, "Hello", 6, 0);
-                        char key[8];
-                        read(new_sd, key, 7);
-                        if(strlen(key)>0){
+                        char key[7];
+                        
+                        if(read(new_sd, key, 7)>0){
                             cout<<"received key:"<<key<<endl;
                             database->addPublisher(inet_ntoa(cliaddr.sin_addr), key);
+                            keyMap[i]=key;
                         }
 
                         FD_SET(new_sd, &master_set);
@@ -173,7 +175,7 @@ void ServerConnection::openPubConnection(){
                             if(CAT_LIST.length() > 0)
                                 send(i, CAT_LIST.c_str(), CAT_LIST.length(), 0);
                             else
-                                send(i, "EMPTY", 6, 0); 
+                                send(i, "", 1, 0); 
                         }
                         //to add file to database
                         else if(strcmp(buffer, "2") == 0){
@@ -188,7 +190,8 @@ void ServerConnection::openPubConnection(){
                                 int pos = cat_file.find(":");
                                 category = cat_file.substr(0, pos);
                                 file = cat_file.substr(pos+1, recv_file_size);
-                                database->addFile(i, category, file);
+                                string pubId=database->getPublisherId(keyMap[i]);
+                                database->addFile(pubId, category, file);
                                 database->addToQueue(category);
                                 send(i, "Added file", 11, 0);
                             }
