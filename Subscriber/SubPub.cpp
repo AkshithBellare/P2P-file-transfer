@@ -106,10 +106,12 @@ void SubPub::ReceiveFileFromPublisher()
         fp = fopen(buff, "a");
         int words;
         read(SubToPubSockfd, &words, sizeof(int));
+        string wordBuff;
         while (ch != words)
         {
             read(SubToPubSockfd, buffer, 255);
-            fprintf(fp, "%s", buffer);
+            wordBuff=strcat(buffer," ");
+            fprintf(fp, "%s", wordBuff);
             ch++;
         }
         printf("The file was received successfully\n");
@@ -149,7 +151,7 @@ void SubPub::connectToPublisher(char *Pub_IP)
 int main(int argc, char **argv)
 {
     SubPub *subscriber = new SubPub();
-    if(argc>2){
+    if(argc>=2){
         subscriber->connectToPublisher(argv[1]);
     }else
     {

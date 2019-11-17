@@ -12,124 +12,148 @@
 #include <bits/stdc++.h>
 #define SERV_PORT 5000
 #define PORT_PUB_SUB 7000
-
-std::string KEY="123456";
-
 using namespace std;
+
+string KEY="";
+
 
 class PubSub
 {
 public:
-	struct sockaddr_in ALSServAddr;
-	int ALSSockFd, ALSNewSockFd;
-	int ALCSockFd;
-	char buffer[4098];
-	socklen_t SubLen;
-	struct sockaddr_in ALCServAddr, Sub_Addr;
+    struct sockaddr_in ALSServAddr;
+    int ALSSockFd, ALSNewSockFd;
+    int ALCSockFd;
+    char buffer[4098];
+    socklen_t SubLen;
+    struct sockaddr_in ALCServAddr, Sub_Addr;
 
-	void listenForSubscriber(); 
-	void askForFile();
-	void sendFileToSub(const char *file);
-	void error(const char *msg)
-	{
-		perror(msg);
-		exit(0);
-	}
+    void listenForSubscriber(); 
+    void askForFile();
+    void sendFileToSub(const char *file);
+    void error(const char *msg)
+    {
+        perror(msg);
+        exit(0);
+    }
 };
 void PubSub::listenForSubscriber()
 {
 
-	ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (ALSSockFd < 0)
-		error("ERROR opening socket\n");
-	else
-		printf("Socket successfully created..\n");
-	bzero((char *)&ALSServAddr, sizeof(ALSServAddr));
-	ALSServAddr.sin_family = AF_INET;
-	//ALSServAddr.sin_addr.s_addr = INADDR_ANY;		//for localhost
-	ALSServAddr.sin_port = htons(PORT_PUB_SUB);
-	if (bind(ALSSockFd, (struct sockaddr *)&ALSServAddr, sizeof(ALSServAddr)) < 0)
-	{
-		error("ERROR on binding\n");
-	}
-	else
-		printf("Socket successfully binded..\n");
-	if ((listen(ALSSockFd, 5)) != 0)
-	{
-		printf("Listen failed...\n");
-		exit(0);
-	}
-	else
-		printf("Publisher listening..\n");
-	SubLen = sizeof(Sub_Addr);
-	ALSNewSockFd = accept(ALSSockFd, (struct sockaddr *)&Sub_Addr, &SubLen);
-	if (ALSNewSockFd < 0)
-	{
-		error("ERROR on accept\n");
-	}
-	else
-		cout << "Connected to Subscriber\n";
-	askForFile();
+    ALSSockFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (ALSSockFd < 0)
+        error("ERROR opening socket\n");
+    else
+        printf("Socket successfully created..\n");
+    bzero((char *)&ALSServAddr, sizeof(ALSServAddr));
+    ALSServAddr.sin_family = AF_INET;
+    //ALSServAddr.sin_addr.s_addr = INADDR_ANY;     //for localhost
+    ALSServAddr.sin_port = htons(PORT_PUB_SUB);
+    if (bind(ALSSockFd, (struct sockaddr *)&ALSServAddr, sizeof(ALSServAddr)) < 0)
+    {
+        error("ERROR on binding\n");
+    }
+    else
+        printf("Socket successfully binded..\n");
+    if ((listen(ALSSockFd, 5)) != 0)
+    {
+        printf("Listen failed...\n");
+        exit(0);
+    }
+    else
+        printf("Publisher listening..\n");
+    SubLen = sizeof(Sub_Addr);
+    ALSNewSockFd = accept(ALSSockFd, (struct sockaddr *)&Sub_Addr, &SubLen);
+    if (ALSNewSockFd < 0)
+    {
+        error("ERROR on accept\n");
+    }
+    else
+        cout << "Connected to Subscriber\n";
+    askForFile();
 }
 
 void PubSub::askForFile()
 {
-	char buff[1024];
-	int n, i;
+    char buff[1024];
+    int n, i;
 
-	//asks to enter key
-	string message="Please enter the key";
-	write(ALSNewSockFd,message.c_str(),sizeof(message));
-	cout<<"Asked For key\n";
-	
-	//receives key;
-	bzero(buff, sizeof(buff));
-	read(ALSNewSockFd, buff, sizeof(buff));
-	string inputKey(buff);
-	if (KEY.compare(inputKey) == 0)
-	{
-		string message = "verified";
-		write(ALSNewSockFd, message.c_str(), sizeof(buff));
+    //asks to enter key
+    string message="Please enter the key";
+    write(ALSNewSockFd,message.c_str(),sizeof(message));
+    cout<<"Asked For key\n";
+    
+    //receives key;
+    bzero(buff, sizeof(buff));
+    read(ALSNewSockFd, buff, sizeof(buff));
+    string inputKey(buff);
+    KEY = KEY.append("\n");
+    cout << KEY << endl;
+    cout << buff << endl;
+    if (KEY.compare(inputKey) == 0)
+    {
+        string message = "verified";
+        write(ALSNewSockFd, message.c_str(), sizeof(buff));
 
-		//receving file name
-		bzero(buff, sizeof(buff));
-		read(ALSNewSockFd, buff, sizeof(buff));
-		cout << "Publisher asked for: " << buff<<"\n";
-		sendFileToSub(buff);
-		
-	}
-	else{
-		string message = "Wrong key";
-		write(ALSNewSockFd, message.c_str(), sizeof(buff));
-		askForFile();
-	}
+        //receving file name
+        bzero(buff, sizeof(buff));
+        read(ALSNewSockFd, buff, sizeof(buff));
+        cout << "Publisher asked for: " << buff<<"\n";
+        sendFileToSub(buff);
+        
+    }
+    else{
+        string message = "Wrong key";
+        write(ALSNewSockFd, message.c_str(), sizeof(buff));
+        askForFile();
+    }
 }
 void PubSub::sendFileToSub(const char *fileName)
 {
-	FILE *f;
-	int words = 0;
-	char c;
-	f = fopen("received_file.txt", "r");
-	while ((c = getc(f)) != EOF) //Counting No of words in the file
-	{
-		fscanf(f, "%s", buffer);
-		if (isspace(c) || c == '\t')
-			words++;
-	}
-	write(ALSNewSockFd, &words, sizeof(int));
-	rewind(f);
-	char ch;
-	while (ch != EOF)
-	{
-		fscanf(f, "%s", buffer);
-		write(ALSNewSockFd, buffer, 512);
-		ch = fgetc(f);
-	}
-	printf("The file was sent successfully\n");
+    FILE *f;
+    int words = 0;
+    char c;
+    cout << fileName << endl;
+    string fname = fileName;
+    remove(fname.begin(),fname.end(),'\n');
+    f = fopen(fname.c_str(), "r");
+    
+    if(f!=NULL){
+    while ((c = getc(f)) != EOF) //Counting No of words in the file
+    {
+        fscanf(f, "%s", buffer);
+        if (isspace(c) || c == '\t')
+            words++;
+    }
+    write(ALSNewSockFd, &words, sizeof(int));
+    rewind(f);
+    char ch;
+    while (ch != EOF)
+    {
+        fscanf(f, "%s", buffer);
+        write(ALSNewSockFd, buffer, 512);
+        ch = fgetc(f);
+    }
+    printf("The file was sent successfully\n");
+    }
+    else {
+        printf("The file doesnt exist\n");
+    }
 }
 
 int main(int argc, char *argv[])
 {
-	PubSub *withSubscriber = new PubSub();
-	withSubscriber->listenForSubscriber();
+    PubSub *withSubscriber = new PubSub();
+    // if(argc >= 2){
+    // KEY = argv[1] + '\n';
+    // withSubscriber->listenForSubscriber();
+    // }
+    // else {
+    //  cout << "Enter your KEY\n";
+    // }
+    if(argc<2){
+        cout<<"Please enter key!"<<endl;
+    }else{
+        KEY = argv[1];
+        withSubscriber->listenForSubscriber();
+    }
 }
