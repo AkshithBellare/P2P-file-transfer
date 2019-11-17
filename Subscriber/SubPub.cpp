@@ -106,12 +106,11 @@ void SubPub::ReceiveFileFromPublisher()
         fp = fopen(buff, "a");
         int words;
         read(SubToPubSockfd, &words, sizeof(int));
-        string wordBuff;
         while (ch != words)
         {
             read(SubToPubSockfd, buffer, 255);
-            wordBuff=strcat(buffer," ");
-            fprintf(fp, "%s", wordBuff);
+            fprintf(fp, "%s", buffer);
+            fprintf(fp, "%c", ' ');
             ch++;
         }
         printf("The file was received successfully\n");
