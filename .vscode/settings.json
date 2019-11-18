@@ -1,9 +1,10 @@
 {
     "files.associations": {
-        "any": "cpp",
+        "ostream": "cpp",
+        "iostream": "cpp",
+        "string": "cpp",
         "array": "cpp",
         "atomic": "cpp",
-        "bit": "cpp",
         "*.tcc": "cpp",
         "bitset": "cpp",
         "cctype": "cpp",
@@ -31,8 +32,6 @@
         "deque": "cpp",
         "forward_list": "cpp",
         "list": "cpp",
-        "map": "cpp",
-        "set": "cpp",
         "unordered_map": "cpp",
         "unordered_set": "cpp",
         "vector": "cpp",
@@ -40,6 +39,7 @@
         "algorithm": "cpp",
         "functional": "cpp",
         "iterator": "cpp",
+        "map": "cpp",
         "memory": "cpp",
         "memory_resource": "cpp",
         "numeric": "cpp",
@@ -47,7 +47,7 @@
         "random": "cpp",
         "ratio": "cpp",
         "regex": "cpp",
-        "string": "cpp",
+        "set": "cpp",
         "string_view": "cpp",
         "system_error": "cpp",
         "tuple": "cpp",
@@ -58,12 +58,10 @@
         "initializer_list": "cpp",
         "iomanip": "cpp",
         "iosfwd": "cpp",
-        "iostream": "cpp",
         "istream": "cpp",
         "limits": "cpp",
         "mutex": "cpp",
         "new": "cpp",
-        "ostream": "cpp",
         "scoped_allocator": "cpp",
         "shared_mutex": "cpp",
         "sstream": "cpp",
@@ -72,7 +70,6 @@
         "thread": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "valarray": "cpp",
-        "variant": "cpp"
+        "valarray": "cpp"
     }
 }
