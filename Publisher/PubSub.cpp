@@ -150,7 +150,6 @@ void PubSub::sendFileToSub(const char *fileName)
     else {
         printf("The file doesnt exist\n");
     }
-
 }
 
 int main(int argc, char *argv[])
